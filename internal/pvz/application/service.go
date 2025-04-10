@@ -21,6 +21,11 @@ func NewPVZService(repo domain.PVZRepository, l *logger.ZerologLogger) *PVZServi
 }
 
 func (s *PVZService) Create(ctx context.Context, params CreateParams) (*domain.PVZ, error) {
+	if err := params.Validate(); err != nil {
+		// TODO: handle err correctly
+		return nil, err
+	}
+
 	pvz := domain.PVZ{}
 	if params.ID != nil {
 		pvz.ID = *params.ID

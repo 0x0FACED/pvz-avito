@@ -24,6 +24,10 @@ func NewReceptionService(repo domain.ReceptionRepository, l *logger.ZerologLogge
 }
 
 func (s *ReceptionService) Create(ctx context.Context, params CreateParams) (*domain.Reception, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
+
 	last, err := s.repo.FindLastOpenByPVZ(ctx, params.PVZID)
 	if err != nil {
 		// TODO: handle err

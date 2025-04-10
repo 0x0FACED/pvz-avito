@@ -60,12 +60,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		UserRole:         claims.Role,
 	}
 
-	if err := params.Validate(); err != nil {
-		// TODO: handle err correctly
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	pvz, err := h.svc.Create(r.Context(), params)
 	if err != nil {
 		// TODO: change

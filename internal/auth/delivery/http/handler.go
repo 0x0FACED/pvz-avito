@@ -53,11 +53,6 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		Role:     domain.Role(req.Role),
 	}
 
-	if err := params.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	user, err := h.svc.Register(r.Context(), params)
 	if err != nil {
 		// TODO: change
@@ -96,11 +91,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	params := application.LoginParams{
 		Email:    domain.Email(req.Email),
 		Password: req.Password,
-	}
-
-	if err := params.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
 	}
 
 	user, err := h.svc.Login(r.Context(), params)
