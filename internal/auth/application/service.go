@@ -24,10 +24,6 @@ func NewAuthService(repo domain.UserRepository, l *logger.ZerologLogger) *AuthSe
 }
 
 func (s *AuthService) Register(ctx context.Context, params RegisterParams) (*domain.User, error) {
-	if err := params.Validate(); err != nil {
-		return nil, err
-	}
-
 	// using min cost, dont use in prod
 	// separate cost to .env file
 	hash, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.MinCost)
