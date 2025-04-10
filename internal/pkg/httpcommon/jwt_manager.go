@@ -1,6 +1,7 @@
 package httpcommon
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -12,26 +13,24 @@ type JWTManager struct {
 }
 
 func NewManager(secretKey string, duration time.Duration) *JWTManager {
-	return &JWTManager{secretKey: secretKey, tokenDuration: duration}
+	return &JWTManager{
+		secretKey:     secretKey,
+		tokenDuration: duration,
+	}
 }
 
 type Claims struct {
-	Email string `json:"email"`
-	Role  string `json:"role"`
-	jwt.RegisteredClaims
-}
-
-// generating token for dummy login.
-// using role only
-type DummyClaims struct {
-	Role string `json:"role"`
+	Email   string `json:"email"`
+	Role    string `json:"role"`
+	IsDummy bool   `json:"is_dummy,omitempty"`
 	jwt.RegisteredClaims
 }
 
 func (m *JWTManager) Generate(email, role string) (string, error) {
 	claims := Claims{
-		Email: email,
-		Role:  role,
+		Email:   email,
+		Role:    role,
+		IsDummy: false,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   email,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(m.tokenDuration)),
@@ -44,8 +43,9 @@ func (m *JWTManager) Generate(email, role string) (string, error) {
 }
 
 func (m *JWTManager) GenerateDummy(role string) (string, error) {
-	claims := DummyClaims{
-		Role: role,
+	claims := Claims{
+		Role:    role,
+		IsDummy: true,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(m.tokenDuration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -57,7 +57,7 @@ func (m *JWTManager) GenerateDummy(role string) (string, error) {
 }
 
 func (m *JWTManager) Verify(accessToken string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(accessToken, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(accessToken, &Claims{}, func(t *jwt.Token) (any, error) {
 		return []byte(m.secretKey), nil
 	})
 	if err != nil {
