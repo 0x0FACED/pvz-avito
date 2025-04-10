@@ -13,6 +13,7 @@ type CreateParams struct {
 }
 
 func (p CreateParams) Validate() error {
+	// TODO: refactor
 	if p.Type != domain.Shoes && p.Type != domain.Electronics && p.Type != domain.Clothes {
 		return errors.New("unsupported product type")
 	}

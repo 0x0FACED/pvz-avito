@@ -32,13 +32,16 @@ func (r *PVZPostgresRepository) Create(ctx context.Context, pvz *pvz_domain.PVZ)
 		"city":              pvz.City,
 	}
 
-	err := r.pool.QueryRow(ctx, query, args).Scan(&pvz.ID, &pvz.RegistrationDate, &pvz.City)
+	var created pvz_domain.PVZ
+	err := r.pool.QueryRow(ctx, query, args).Scan(
+		&created.ID, &created.RegistrationDate, &created.City,
+	)
 	if err != nil {
 		// TODO: handle err
 		return nil, err
 	}
 
-	return pvz, nil
+	return &created, nil
 }
 
 func (r *PVZPostgresRepository) FindByID(ctx context.Context, id string) (*pvz_domain.PVZ, error) {

@@ -30,10 +30,12 @@ func (r *ReceptionPostgresRepository) Create(ctx context.Context, reception *dom
 		"status":    reception.Status,
 	}
 
-	created := domain.Reception{}
-
-	err := r.pool.QueryRow(ctx, query, args).Scan(&created.ID, &created.DateTime, &created.PVZID, &created.Status)
+	var created domain.Reception
+	err := r.pool.QueryRow(ctx, query, args).Scan(
+		&created.ID, &created.DateTime, &created.PVZID, &created.Status,
+	)
 	if err != nil {
+		// TODO: handle err
 		return nil, err
 	}
 

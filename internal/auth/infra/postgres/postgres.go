@@ -18,10 +18,11 @@ func NewAuthPostgresRepository(pgx *pgxpool.Pool) *AuthPostgresRepository {
 	}
 }
 
-func (r *AuthPostgresRepository) Create(ctx context.Context, user *domain.User) error {
+func (r *AuthPostgresRepository) Create(ctx context.Context, user *domain.User) (*domain.User, error) {
 	query := `
 		INSERT INTO avito.users (email, password_hash, role)
 		VALUES (@email, @password_hash, @role)
+		RETURNING id, email, role
 	`
 
 	args := pgx.NamedArgs{
@@ -30,13 +31,18 @@ func (r *AuthPostgresRepository) Create(ctx context.Context, user *domain.User) 
 		"role":          user.Role,
 	}
 
-	_, err := r.pool.Exec(ctx, query, args)
+	var created domain.User
+	created.Password = user.Password
+
+	err := r.pool.QueryRow(ctx, query, args).Scan(
+		&created.ID, &created.Email, &created.Role,
+	)
 	if err != nil {
 		// TODO: handle err
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &created, nil
 }
 
 func (r *AuthPostgresRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {

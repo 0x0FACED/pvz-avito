@@ -16,7 +16,7 @@ func NewProductPostgresRepository(pgx *pgxpool.Pool) *ProductPostgresRepository 
 	return &ProductPostgresRepository{pool: pgx}
 }
 
-func (r *ProductPostgresRepository) Create(ctx context.Context, product *domain.Product) error {
+func (r *ProductPostgresRepository) Create(ctx context.Context, product *domain.Product) (*domain.Product, error) {
 	query := `
 		INSERT INTO avito.products (type, reception_id)
 		VALUES (@type, @reception_id)
@@ -28,13 +28,17 @@ func (r *ProductPostgresRepository) Create(ctx context.Context, product *domain.
 		"reception_id": product.ReceptionID,
 	}
 
-	err := r.pool.QueryRow(ctx, query, args).Scan(&product.ID, &product.DateTime)
+	var created domain.Product
+	created.Type = product.Type
+	created.ReceptionID = product.ReceptionID
+
+	err := r.pool.QueryRow(ctx, query, args).Scan(&created.ID, &created.DateTime)
 	if err != nil {
 		// TODO: handle err
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &created, nil
 }
 
 func (r *ProductPostgresRepository) GetByID(ctx context.Context, id string) (*domain.Product, error) {

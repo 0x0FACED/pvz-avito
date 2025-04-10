@@ -39,13 +39,13 @@ func (s *AuthService) Register(ctx context.Context, params RegisterParams) (*dom
 		Role:     params.Role,
 	}
 
-	err = s.repo.Create(ctx, user)
+	created, err := s.repo.Create(ctx, user)
 	if err != nil {
 		// TODO: handle err
 		return nil, err
 	}
 
-	return user, nil
+	return created, nil
 }
 
 func (s *AuthService) Login(ctx context.Context, params LoginParams) (*domain.User, error) {
