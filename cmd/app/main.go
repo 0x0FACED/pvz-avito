@@ -71,7 +71,7 @@ func main() {
 	receptionSvc := reception_svc.NewReceptionService(receptionRepo, receptionSvcLogger)
 
 	// jwt manager (move diration to cfg)
-	jwt := httpcommon.NewManager(cfg.Server.JWTSecret, 256*time.Hour)
+	jwt := httpcommon.NewManager(cfg.Server.JWTSecret, time.Hour*240)
 
 	// create middleware
 	middleware := middleware.NewMiddlewareHandler(jwt, httpLogger)
@@ -92,7 +92,7 @@ func main() {
 	productHandler.RegisterRoutes(privateMux)
 	receptionHandler.RegisterRoutes(privateMux)
 
-	// apply auth for '/' routes (all expect /login, /dummyLogin, /register)
+	// apply auth for '/' routes (all expect public /login, /dummyLogin, /register)
 	mux.Handle("/", middleware.Auth(privateMux))
 
 	// apply logger middleware for all routes
