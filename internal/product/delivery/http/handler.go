@@ -22,6 +22,10 @@ func NewHandler(svc ProductService) *Handler {
 	}
 }
 
+func (h Handler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("POST /products", h.Create)
+}
+
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 	w.Write([]byte(`{"message":"not impl"}`))

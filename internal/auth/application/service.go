@@ -5,16 +5,22 @@ import (
 	"errors"
 
 	"github.com/0x0FACED/pvz-avito/internal/auth/domain"
+	"github.com/0x0FACED/pvz-avito/internal/pkg/logger"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
 	repo domain.UserRepository
+
+	log *logger.ZerologLogger
 }
 
-func NewAuthService(repo domain.UserRepository) *AuthService {
-	return &AuthService{repo: repo}
+func NewAuthService(repo domain.UserRepository, l *logger.ZerologLogger) *AuthService {
+	return &AuthService{
+		repo: repo,
+		log:  l,
+	}
 }
 
 func (s *AuthService) Register(ctx context.Context, params RegisterParams) (*domain.User, error) {

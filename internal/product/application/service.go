@@ -4,17 +4,21 @@ import (
 	"context"
 	"time"
 
+	"github.com/0x0FACED/pvz-avito/internal/pkg/logger"
 	"github.com/0x0FACED/pvz-avito/internal/product/domain"
 	"github.com/google/uuid"
 )
 
 type ProductService struct {
 	repo domain.ProductRepository
+
+	log *logger.ZerologLogger
 }
 
-func NewProductService(repo domain.ProductRepository) *ProductService {
+func NewProductService(repo domain.ProductRepository, l *logger.ZerologLogger) *ProductService {
 	return &ProductService{
 		repo: repo,
+		log:  l,
 	}
 }
 

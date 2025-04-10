@@ -25,6 +25,12 @@ func NewHandler(svc AuthService, jwt *httpcommon.JWTManager) *Handler {
 	return &Handler{svc: svc}
 }
 
+func (h Handler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("POST /dummyLogin", h.DummyLogin)
+	mux.HandleFunc("POST /register", h.Register)
+	mux.HandleFunc("POST /login", h.Login)
+}
+
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	type registerRequest struct {
 		Email    string `json:"email"`

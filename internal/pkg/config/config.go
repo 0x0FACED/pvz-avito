@@ -7,7 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type CodexConfig struct {
+type AppConfig struct {
 	Database DatabaseConfig
 	Server   ServerConfig
 	Logger   LoggerConfig
@@ -60,12 +60,12 @@ type LoggerConfig struct {
 
 // MustLoad loads config from .env file and parse it to CodexConig.
 // Panics if err != nil
-func MustLoad() *CodexConfig {
+func MustLoad() *AppConfig {
 	if err := godotenv.Load(); err != nil {
 		panic("failed to load config, err: " + err.Error())
 	}
 
-	cfg := &CodexConfig{}
+	cfg := &AppConfig{}
 
 	if err := env.Parse(&cfg.Database); err != nil {
 		panic("failed to parse database config, err: " + err.Error())

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -29,19 +30,19 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
 		if tokenString == "" {
-			httpcommon.JSONError(w, http.StatusUnauthorized, nil)
+			httpcommon.JSONError(w, http.StatusUnauthorized, errors.New("no auth"))
 			return
 		}
 
 		parts := strings.Split(tokenString, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			httpcommon.JSONError(w, http.StatusUnauthorized, nil)
+			httpcommon.JSONError(w, http.StatusUnauthorized, errors.New("no bearer"))
 			return
 		}
 
 		claims, err := m.jwtManager.Verify(parts[1])
 		if err != nil {
-			httpcommon.JSONError(w, http.StatusUnauthorized, nil)
+			httpcommon.JSONError(w, http.StatusUnauthorized, errors.New("invalid token"))
 			return
 		}
 

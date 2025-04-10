@@ -26,6 +26,13 @@ func NewHandler(svc PVZService) *Handler {
 	}
 }
 
+func (h Handler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("POST /pvz", h.Create)
+	mux.HandleFunc("GET /pvz", h.ListWithReceptions)
+	mux.HandleFunc("POST /pvz/{pvzId}/close_last_reception", h.CloseLastReception)
+	mux.HandleFunc("POST /pvz/{pvzId}/delete_last_product", h.DeleteLastProduct)
+}
+
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	type createRequest struct {
 		ID               *string    `json:"id,omitempty"`
@@ -64,6 +71,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	// TODO: change
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(`{"message":"pvz created successfully"}`))
+}
+
+func (h *Handler) CloseLastReception(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+	w.Write([]byte(`{"message":"not impl"}`))
+}
+
+func (h *Handler) DeleteLastProduct(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+	w.Write([]byte(`{"message":"not impl"}`))
 }
 
 func (h *Handler) ListWithReceptions(w http.ResponseWriter, r *http.Request) {

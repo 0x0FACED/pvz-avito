@@ -3,16 +3,20 @@ package application
 import (
 	"context"
 
+	"github.com/0x0FACED/pvz-avito/internal/pkg/logger"
 	"github.com/0x0FACED/pvz-avito/internal/pvz/domain"
 )
 
 type PVZService struct {
 	repo domain.PVZRepository
+
+	log *logger.ZerologLogger
 }
 
-func NewPVZService(repo domain.PVZRepository) *PVZService {
+func NewPVZService(repo domain.PVZRepository, l *logger.ZerologLogger) *PVZService {
 	return &PVZService{
 		repo: repo,
+		log:  l,
 	}
 }
 
