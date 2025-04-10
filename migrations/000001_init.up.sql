@@ -23,8 +23,7 @@ CREATE TABLE IF NOT EXISTS avito.receptions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     date_time TIMESTAMP NOT NULL DEFAULT NOW(),
     pvz_id UUID NOT NULL REFERENCES avito.pvz(id) ON DELETE CASCADE,
-    status avito.status_enum NOT NULL,
-    CONSTRAINT unique_active_reception UNIQUE (pvz_id) WHERE (status = 'in_progress')
+    status avito.status_enum NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS avito.products (
@@ -33,6 +32,8 @@ CREATE TABLE IF NOT EXISTS avito.products (
     type avito.product_type_enum NOT NULL,
     reception_id UUID NOT NULL REFERENCES avito.receptions(id) ON DELETE CASCADE
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_active_reception ON avito.receptions(pvz_id) WHERE status = 'in_progress';
 
 CREATE INDEX IF NOT EXISTS idx_receptions_pvz_id ON avito.receptions(pvz_id);
 CREATE INDEX IF NOT EXISTS idx_receptions_status ON avito.receptions(status);
