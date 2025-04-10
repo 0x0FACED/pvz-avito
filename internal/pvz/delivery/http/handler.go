@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/0x0FACED/pvz-avito/internal/pkg/httpcommon"
 	"github.com/0x0FACED/pvz-avito/internal/pvz/application"
 	"github.com/0x0FACED/pvz-avito/internal/pvz/domain"
 )
@@ -46,13 +47,21 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	claims, ok := r.Context().Value("user").(*httpcommon.Claims)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusBadRequest)
+		return
+	}
+
 	params := application.CreateParams{
 		ID:               req.ID,
 		RegistrationDate: req.RegistrationDate,
 		City:             domain.City(req.City),
+		UserRole:         claims.Role,
 	}
 
 	if err := params.Validate(); err != nil {
+		// TODO: handle err correctly
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -65,12 +74,19 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// temp
-	_ = pvz
+	type createResponse struct {
+		ID               string      `json:"id"`
+		RegistrationDate time.Time   `json:"registrationDate"`
+		City             domain.City `json:"city"`
+	}
 
-	// TODO: change
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(`{"message":"pvz created successfully"}`))
+	resp := createResponse{
+		ID:               pvz.ID,
+		RegistrationDate: pvz.RegistrationDate,
+		City:             pvz.City,
+	}
+
+	httpcommon.JSONResponse(w, http.StatusCreated, resp)
 }
 
 func (h *Handler) CloseLastReception(w http.ResponseWriter, r *http.Request) {

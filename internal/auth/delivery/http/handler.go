@@ -66,10 +66,19 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = user
+	type registerResponse struct {
+		ID    string `json:"id"`
+		Email string `json:"email"`
+		Role  string `json:"role"`
+	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(`{"message":"registered successfully"}`))
+	resp := registerResponse{
+		ID:    user.ID,
+		Email: user.Email.String(),
+		Role:  user.Role.String(),
+	}
+
+	httpcommon.JSONResponse(w, http.StatusCreated, resp)
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
