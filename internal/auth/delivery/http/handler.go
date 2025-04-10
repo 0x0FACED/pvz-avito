@@ -22,7 +22,10 @@ type Handler struct {
 }
 
 func NewHandler(svc AuthService, jwt *httpcommon.JWTManager) *Handler {
-	return &Handler{svc: svc}
+	return &Handler{
+		svc:        svc,
+		jwtManager: jwt,
+	}
 }
 
 func (h Handler) RegisterRoutes(mux *http.ServeMux) {
