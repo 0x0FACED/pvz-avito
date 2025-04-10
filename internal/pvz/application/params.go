@@ -26,7 +26,8 @@ func (p CreateParams) Validate() error {
 	if err := p.City.Validate(); err != nil {
 		return err
 	}
-
+	
+	// TODO: refactor
 	if p.UserRole != "moderator" {
 		return errors.New("only moderator can create new pvz")
 	}
