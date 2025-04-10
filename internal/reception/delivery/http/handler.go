@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
 	"github.com/0x0FACED/pvz-avito/internal/pkg/httpcommon"
@@ -57,5 +58,19 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpcommon.JSONResponse(w, http.StatusCreated, reception)
+	type createResponse struct {
+		ID       string                  `json:"id"`
+		DateTime time.Time               `json:"dateTime"`
+		PVZID    string                  `json:"pvzId"`
+		Status   reception_domain.Status `json:"status"`
+	}
+
+	resp := createResponse{
+		ID:       reception.ID,
+		DateTime: reception.DateTime,
+		PVZID:    reception.PVZID,
+		Status:   reception.Status,
+	}
+
+	httpcommon.JSONResponse(w, http.StatusCreated, resp)
 }
