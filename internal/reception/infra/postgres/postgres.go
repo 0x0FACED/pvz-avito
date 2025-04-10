@@ -16,24 +16,28 @@ func NewReceptionPostgresRepository(pgx *pgxpool.Pool) *ReceptionPostgresReposit
 	return &ReceptionPostgresRepository{pool: pgx}
 }
 
-func (r *ReceptionPostgresRepository) Create(ctx context.Context, reception *domain.Reception) error {
+func (r *ReceptionPostgresRepository) Create(ctx context.Context, reception *domain.Reception) (*domain.Reception, error) {
 	query := `
-		INSERT INTO avito.receptions (pvz_id, status)
-		VALUES (@pvz_id, 'in_progress')
-		RETURNING id, date_time
+		INSERT INTO avito.receptions (id, date_time, pvz_id, status)
+		VALUES (@id, @date_time, @pvz_id, @status)
+		RETURNING id, date_time, pvz_id, status
 	`
 
 	args := pgx.NamedArgs{
-		"pvz_id": reception.PVZID,
+		"id":        reception.ID,
+		"date_time": reception.DateTime,
+		"pvz_id":    reception.PVZID,
+		"status":    reception.Status,
 	}
 
-	err := r.pool.QueryRow(ctx, query, args).Scan(&reception.ID, &reception.DateTime)
+	created := domain.Reception{}
+
+	err := r.pool.QueryRow(ctx, query, args).Scan(&created.ID, &created.DateTime, &created.PVZID, &created.Status)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	reception.Status = "in_progress"
-	return nil
+	return &created, nil
 }
 
 func (r *ReceptionPostgresRepository) FindByID(ctx context.Context, id string) (*domain.Reception, error) {
@@ -75,6 +79,7 @@ func (r *ReceptionPostgresRepository) FindLastOpenByPVZ(ctx context.Context, pvz
 	}
 
 	reception := domain.Reception{}
+
 	err := r.pool.QueryRow(ctx, query, args).Scan(
 		&reception.ID,
 		&reception.DateTime,
