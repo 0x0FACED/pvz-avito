@@ -4,29 +4,32 @@ import (
 	"context"
 
 	"github.com/0x0FACED/pvz-avito/internal/pkg/logger"
-	"github.com/0x0FACED/pvz-avito/internal/pvz/domain"
+	pvz_domain "github.com/0x0FACED/pvz-avito/internal/pvz/domain"
+	reception_domain "github.com/0x0FACED/pvz-avito/internal/reception/domain"
 )
 
 type PVZService struct {
-	repo domain.PVZRepository
+	pvzRepo       pvz_domain.PVZRepository
+	receptionRepo reception_domain.ReceptionRepository
 
 	log *logger.ZerologLogger
 }
 
-func NewPVZService(repo domain.PVZRepository, l *logger.ZerologLogger) *PVZService {
+func NewPVZService(pvzRepo pvz_domain.PVZRepository, receptionRepo reception_domain.ReceptionRepository, l *logger.ZerologLogger) *PVZService {
 	return &PVZService{
-		repo: repo,
-		log:  l,
+		pvzRepo:       pvzRepo,
+		receptionRepo: receptionRepo,
+		log:           l,
 	}
 }
 
-func (s *PVZService) Create(ctx context.Context, params CreateParams) (*domain.PVZ, error) {
+func (s *PVZService) Create(ctx context.Context, params CreateParams) (*pvz_domain.PVZ, error) {
 	if err := params.Validate(); err != nil {
 		// TODO: handle err correctly
 		return nil, err
 	}
 
-	pvz := domain.PVZ{}
+	pvz := pvz_domain.PVZ{}
 	if params.ID != nil {
 		pvz.ID = *params.ID
 	}
@@ -37,7 +40,7 @@ func (s *PVZService) Create(ctx context.Context, params CreateParams) (*domain.P
 
 	pvz.City = params.City
 
-	created, err := s.repo.Create(ctx, &pvz)
+	created, err := s.pvzRepo.Create(ctx, &pvz)
 	if err != nil {
 		// TOOD: handle err
 		return nil, err
@@ -46,8 +49,8 @@ func (s *PVZService) Create(ctx context.Context, params CreateParams) (*domain.P
 	return created, nil
 }
 
-func (s *PVZService) FindByID(ctx context.Context, id string) (*domain.PVZ, error) {
-	pvz, err := s.repo.FindByID(ctx, id)
+func (s *PVZService) FindByID(ctx context.Context, id string) (*pvz_domain.PVZ, error) {
+	pvz, err := s.pvzRepo.FindByID(ctx, id)
 	if err != nil {
 		// TOOD: handle err
 		return nil, err
@@ -56,8 +59,21 @@ func (s *PVZService) FindByID(ctx context.Context, id string) (*domain.PVZ, erro
 	return pvz, nil
 }
 
-func (s *PVZService) ListWithReceptions(ctx context.Context, params ListWithReceptionsParams) ([]*domain.PVZWithReceptions, error) {
-	pvzWithReceptions, err := s.repo.ListWithReceptions(ctx, params.StartDate, params.EndDate, *params.Page, *params.Limit)
+func (s *PVZService) CloseLastReception(ctx context.Context, params CloseLastReceptionParams) (*reception_domain.Reception, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
+
+	reception, err := s.receptionRepo.CloseLastReception(ctx, params.PVZID)
+	if err != nil {
+		return nil, err
+	}
+
+	return reception, nil
+}
+
+func (s *PVZService) ListWithReceptions(ctx context.Context, params ListWithReceptionsParams) ([]*pvz_domain.PVZWithReceptions, error) {
+	pvzWithReceptions, err := s.pvzRepo.ListWithReceptions(ctx, params.StartDate, params.EndDate, *params.Page, *params.Limit)
 	if err != nil {
 		// TODO: handle err
 		return nil, err

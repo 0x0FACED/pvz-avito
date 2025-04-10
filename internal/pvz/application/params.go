@@ -4,14 +4,15 @@ import (
 	"errors"
 	"time"
 
-	"github.com/0x0FACED/pvz-avito/internal/pvz/domain"
+	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
+	pvz_domain "github.com/0x0FACED/pvz-avito/internal/pvz/domain"
 	"github.com/google/uuid"
 )
 
 type CreateParams struct {
 	ID               *string
 	RegistrationDate *time.Time
-	City             domain.City
+	City             pvz_domain.City
 	UserRole         string
 }
 
@@ -26,7 +27,7 @@ func (p CreateParams) Validate() error {
 	if err := p.City.Validate(); err != nil {
 		return err
 	}
-	
+
 	// TODO: refactor
 	if p.UserRole != "moderator" {
 		return errors.New("only moderator can create new pvz")
@@ -57,6 +58,23 @@ func (p *ListWithReceptionsParams) Validate() error {
 		*p.Limit = 10
 	} else if *p.Limit < 0 {
 		return errors.New("limit cant be < 0")
+	}
+
+	return nil
+}
+
+type CloseLastReceptionParams struct {
+	PVZID    string
+	UserRole auth_domain.Role
+}
+
+func (p CloseLastReceptionParams) Validate() error {
+	if err := uuid.Validate(p.PVZID); err != nil {
+		return errors.New("invalid pvz id")
+	}
+
+	if p.UserRole != auth_domain.RoleEmployee {
+		return errors.New("only employee can close reception")
 	}
 
 	return nil

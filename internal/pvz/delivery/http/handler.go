@@ -6,15 +6,18 @@ import (
 	"net/http"
 	"time"
 
+	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
 	"github.com/0x0FACED/pvz-avito/internal/pkg/httpcommon"
 	"github.com/0x0FACED/pvz-avito/internal/pvz/application"
-	"github.com/0x0FACED/pvz-avito/internal/pvz/domain"
+	pvz_domain "github.com/0x0FACED/pvz-avito/internal/pvz/domain"
+	reception_domain "github.com/0x0FACED/pvz-avito/internal/reception/domain"
 )
 
 type PVZService interface {
-	Create(ctx context.Context, params application.CreateParams) (*domain.PVZ, error)
-	FindByID(ctx context.Context, id string) (*domain.PVZ, error)
-	ListWithReceptions(ctx context.Context, params application.ListWithReceptionsParams) ([]*domain.PVZWithReceptions, error)
+	Create(ctx context.Context, params application.CreateParams) (*pvz_domain.PVZ, error)
+	FindByID(ctx context.Context, id string) (*pvz_domain.PVZ, error)
+	ListWithReceptions(ctx context.Context, params application.ListWithReceptionsParams) ([]*pvz_domain.PVZWithReceptions, error)
+	CloseLastReception(ctx context.Context, params application.CloseLastReceptionParams) (*reception_domain.Reception, error)
 }
 
 type Handler struct {
@@ -56,7 +59,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	params := application.CreateParams{
 		ID:               req.ID,
 		RegistrationDate: req.RegistrationDate,
-		City:             domain.City(req.City),
+		City:             pvz_domain.City(req.City),
 		UserRole:         claims.Role,
 	}
 
@@ -69,9 +72,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type createResponse struct {
-		ID               string      `json:"id"`
-		RegistrationDate time.Time   `json:"registrationDate"`
-		City             domain.City `json:"city"`
+		ID               string          `json:"id"`
+		RegistrationDate time.Time       `json:"registrationDate"`
+		City             pvz_domain.City `json:"city"`
 	}
 
 	resp := createResponse{
@@ -84,8 +87,42 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CloseLastReception(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte(`{"message":"not impl"}`))
+	pvzID := r.PathValue("pvzId")
+
+	claims, ok := r.Context().Value("user").(*httpcommon.Claims)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusBadRequest)
+		return
+	}
+
+	params := application.CloseLastReceptionParams{
+		PVZID:    pvzID,
+		UserRole: auth_domain.Role(claims.Role),
+	}
+
+	reception, err := h.svc.CloseLastReception(r.Context(), params)
+	if err != nil {
+		// TODO: change
+		status := http.StatusInternalServerError
+		http.Error(w, err.Error(), status)
+		return
+	}
+
+	type closeResponse struct {
+		ID       string                  `json:"id"`
+		DateTime time.Time               `json:"dateTime"`
+		PVZID    string                  `json:"pvzId"`
+		Status   reception_domain.Status `json:"status"`
+	}
+
+	resp := closeResponse{
+		ID:       reception.ID,
+		DateTime: reception.DateTime,
+		PVZID:    reception.PVZID,
+		Status:   reception.Status,
+	}
+
+	httpcommon.JSONResponse(w, http.StatusCreated, resp)
 }
 
 func (h *Handler) DeleteLastProduct(w http.ResponseWriter, r *http.Request) {
