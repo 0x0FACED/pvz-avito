@@ -27,7 +27,7 @@ func (r *AuthPostgresRepository) Create(ctx context.Context, user *domain.User) 
 	args := pgx.NamedArgs{
 		"email":         user.Email,
 		"password_hash": user.Password,
-		"role":          user.Email,
+		"role":          user.Role,
 	}
 
 	_, err := r.pool.Exec(ctx, query, args)
