@@ -67,7 +67,7 @@ func main() {
 	// creating all svcs
 	authSvc := auth_svc.NewAuthService(authRepo, authSvcLogger)
 	pvzSvc := pvz_svc.NewPVZService(pvzRepo, pvzSvcLogger)
-	productSvc := product_svc.NewProductService(productRepo, productSvcLogger)
+	productSvc := product_svc.NewProductService(productRepo, receptionRepo, productSvcLogger)
 	receptionSvc := reception_svc.NewReceptionService(receptionRepo, receptionSvcLogger)
 
 	// jwt manager (move diration to cfg)
