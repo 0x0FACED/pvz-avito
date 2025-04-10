@@ -43,9 +43,10 @@ func (s *ProductService) Create(ctx context.Context, params CreateParams) (*prod
 	}
 
 	product := &product_domain.Product{
-		ID:       uuid.NewString(),
-		DateTime: time.Now(),
-		Type:     params.Type,
+		ID:          uuid.NewString(),
+		DateTime:    time.Now(),
+		Type:        params.Type,
+		ReceptionID: lastReception.ID,
 	}
 	created, err := s.productRepo.Create(ctx, product)
 	if err != nil {

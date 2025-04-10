@@ -18,12 +18,14 @@ func NewProductPostgresRepository(pgx *pgxpool.Pool) *ProductPostgresRepository 
 
 func (r *ProductPostgresRepository) Create(ctx context.Context, product *domain.Product) (*domain.Product, error) {
 	query := `
-		INSERT INTO avito.products (type, reception_id)
-		VALUES (@type, @reception_id)
+		INSERT INTO avito.products (id, date_time, type, reception_id)
+		VALUES (@id, @date_time, @type, @reception_id)
 		RETURNING id, date_time
 	`
 
 	args := pgx.NamedArgs{
+		"id":           product.ID,
+		"date_time":    product.DateTime,
 		"type":         product.Type,
 		"reception_id": product.ReceptionID,
 	}
