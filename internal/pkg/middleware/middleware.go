@@ -46,7 +46,12 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 			return
 		}
 
-		m.log.Info().Str("user_email", claims.Email).Str("user_role", claims.Role).Msg("User authenticated successfully")
+		// check if token is dummy
+		if claims.IsDummy {
+			m.log.Info().Str("user_role", claims.Role).Msg("Dummy user authenticated successfully")
+		} else {
+			m.log.Info().Str("user_email", claims.Email).Str("user_role", claims.Role).Msg("User authenticated successfully")
+		}
 
 		ctx := context.WithValue(r.Context(), "user", claims)
 		r = r.WithContext(ctx)
