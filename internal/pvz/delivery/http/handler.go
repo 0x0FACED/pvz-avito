@@ -129,8 +129,28 @@ func (h *Handler) CloseLastReception(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DeleteLastProduct(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte(`{"message":"not impl"}`))
+	pvzID := r.PathValue("pvzId")
+
+	claims, ok := r.Context().Value("user").(*httpcommon.Claims)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusBadRequest)
+		return
+	}
+
+	params := application.DeleteLastProductParams{
+		PVZID:    pvzID,
+		UserRole: auth_domain.Role(claims.Role),
+	}
+
+	err := h.svc.DeleteLastProduct(r.Context(), params)
+	if err != nil {
+		// TODO: change
+		status := http.StatusInternalServerError
+		http.Error(w, err.Error(), status)
+		return
+	}
+
+	httpcommon.EmptyResponse(w, http.StatusOK)
 }
 
 func (h *Handler) ListWithReceptions(w http.ResponseWriter, r *http.Request) {
