@@ -29,7 +29,7 @@ func (s *AuthService) Register(ctx context.Context, params RegisterParams) (*aut
 
 	// using min cost, dont use in prod
 	// separate cost to .env file
-	hash, err := hashPasswordString(params.Password, 4)
+	hash, err := HashPasswordString(params.Password, 4)
 	if err != nil {
 		s.log.Error().Any("params", params).Err(err).Msg("Error hash password")
 		return nil, err
@@ -65,7 +65,7 @@ func (s *AuthService) Login(ctx context.Context, params LoginParams) (*auth_doma
 		return nil, err
 	}
 
-	err = compareHashAndPassword(user.Password, params.Password)
+	err = CompareHashAndPassword(user.Password, params.Password)
 	if err != nil {
 		s.log.Error().Any("params", params).Any("user", user).Err(err).Msg("Password mismatch")
 		return nil, err
