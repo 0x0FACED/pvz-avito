@@ -2,10 +2,12 @@ package application
 
 import (
 	"context"
+	"time"
 
 	"github.com/0x0FACED/pvz-avito/internal/pkg/logger"
 	pvz_domain "github.com/0x0FACED/pvz-avito/internal/pvz/domain"
 	reception_domain "github.com/0x0FACED/pvz-avito/internal/reception/domain"
+	"github.com/google/uuid"
 )
 
 type PVZService struct {
@@ -29,16 +31,20 @@ func (s *PVZService) Create(ctx context.Context, params CreateParams) (*pvz_doma
 		return nil, err
 	}
 
-	pvz := pvz_domain.PVZ{}
-	if params.ID != nil {
-		pvz.ID = *params.ID
+	pvz := pvz_domain.PVZ{
+		ID:               params.ID,
+		RegistrationDate: params.RegistrationDate,
+		City:             params.City,
 	}
 
-	if params.RegistrationDate != nil {
-		pvz.RegistrationDate = *params.RegistrationDate
+	if pvz.ID == nil {
+		uuidStr := uuid.NewString()
+		pvz.ID = &uuidStr
 	}
-
-	pvz.City = params.City
+	if pvz.RegistrationDate == nil {
+		now := time.Now()
+		pvz.RegistrationDate = &now
+	}
 
 	created, err := s.pvzRepo.Create(ctx, &pvz)
 	if err != nil {
