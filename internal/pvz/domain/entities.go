@@ -22,7 +22,7 @@ func (c City) String() string {
 
 func (c City) Validate() error {
 	if c != Moscow && c != SPb && c != Kazan {
-		return fmt.Errorf("unsupported city: %s", c)
+		return fmt.Errorf("%w: %s", ErrUnsupportedCity, c)
 	}
 
 	return nil

@@ -36,7 +36,6 @@ func NewPVZService(
 
 func (s *PVZService) Create(ctx context.Context, params CreateParams) (*pvz_domain.PVZ, error) {
 	if err := params.Validate(); err != nil {
-		// TODO: handle err correctly
 		return nil, err
 	}
 
@@ -57,21 +56,10 @@ func (s *PVZService) Create(ctx context.Context, params CreateParams) (*pvz_doma
 
 	created, err := s.pvzRepo.Create(ctx, &pvz)
 	if err != nil {
-		// TOOD: handle err
 		return nil, err
 	}
 
 	return created, nil
-}
-
-func (s *PVZService) FindByID(ctx context.Context, id string) (*pvz_domain.PVZ, error) {
-	pvz, err := s.pvzRepo.FindByID(ctx, id)
-	if err != nil {
-		// TOOD: handle err
-		return nil, err
-	}
-
-	return pvz, nil
 }
 
 func (s *PVZService) CloseLastReception(ctx context.Context, params CloseLastReceptionParams) (*reception_domain.Reception, error) {

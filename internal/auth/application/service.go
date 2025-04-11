@@ -2,74 +2,65 @@ package application
 
 import (
 	"context"
-	"errors"
 
-	"github.com/0x0FACED/pvz-avito/internal/auth/domain"
+	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
 	"github.com/0x0FACED/pvz-avito/internal/pkg/logger"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
-	repo domain.UserRepository
+	repo auth_domain.UserRepository
 
 	log *logger.ZerologLogger
 }
 
-func NewAuthService(repo domain.UserRepository, l *logger.ZerologLogger) *AuthService {
+func NewAuthService(repo auth_domain.UserRepository, l *logger.ZerologLogger) *AuthService {
 	return &AuthService{
 		repo: repo,
 		log:  l,
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, params RegisterParams) (*domain.User, error) {
+func (s *AuthService) Register(ctx context.Context, params RegisterParams) (*auth_domain.User, error) {
 	if err := params.Validate(); err != nil {
-		// TODO: handle err
 		return nil, err
 	}
 
 	// using min cost, dont use in prod
 	// separate cost to .env file
-	hash, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.MinCost)
+	hash, err := hashPasswordString(params.Password, 4)
 	if err != nil {
-		// log err
-		// TODO: handle err
-		return nil, ErrHashPassword
+		return nil, err
 	}
 
-	user := &domain.User{
+	user := &auth_domain.User{
 		ID:       uuid.NewString(),
 		Email:    params.Email,
-		Password: string(hash),
+		Password: hash,
 		Role:     params.Role,
 	}
 
 	created, err := s.repo.Create(ctx, user)
 	if err != nil {
-		// TODO: handle err
 		return nil, err
 	}
 
 	return created, nil
 }
 
-func (s *AuthService) Login(ctx context.Context, params LoginParams) (*domain.User, error) {
+func (s *AuthService) Login(ctx context.Context, params LoginParams) (*auth_domain.User, error) {
 	if err := params.Validate(); err != nil {
-		// TODO: handle err
 		return nil, err
 	}
 
 	user, err := s.repo.FindByEmail(ctx, params.Email.String())
 	if err != nil {
-		// TODO: handle err
 		return nil, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(params.Password))
+	err = compareHashAndPassword(user.Password, params.Password)
 	if err != nil {
-		// TODO: handle err
-		return nil, errors.New("invalid credentials")
+		return nil, err
 	}
 
 	return user, nil

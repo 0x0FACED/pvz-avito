@@ -2,6 +2,7 @@ package application
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
@@ -19,8 +20,7 @@ type CreateParams struct {
 func (p CreateParams) Validate() error {
 	if p.ID != nil {
 		if err := uuid.Validate(*p.ID); err != nil {
-			// TODO: handle err
-			return err
+			return fmt.Errorf("%w: %w", pvz_domain.ErrInvalidIDFormat, err)
 		}
 	}
 
@@ -28,9 +28,8 @@ func (p CreateParams) Validate() error {
 		return err
 	}
 
-	// TODO: refactor
 	if p.UserRole != auth_domain.RoleModerator {
-		return errors.New("only moderator can create new pvz")
+		return pvz_domain.ErrInvalidRole
 	}
 
 	return nil
@@ -70,11 +69,11 @@ type CloseLastReceptionParams struct {
 
 func (p CloseLastReceptionParams) Validate() error {
 	if err := uuid.Validate(p.PVZID); err != nil {
-		return errors.New("invalid pvz id")
+		return fmt.Errorf("%w: %w", pvz_domain.ErrInvalidIDFormat, err)
 	}
 
 	if p.UserRole != auth_domain.RoleEmployee {
-		return errors.New("only employee can close reception")
+		return pvz_domain.ErrInvalidRole
 	}
 
 	return nil
