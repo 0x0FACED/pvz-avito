@@ -1,9 +1,10 @@
 package application
 
 import (
-	"errors"
+	"fmt"
 
 	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
+	reception_domain "github.com/0x0FACED/pvz-avito/internal/reception/domain"
 	"github.com/google/uuid"
 )
 
@@ -14,12 +15,11 @@ type CreateParams struct {
 
 func (p CreateParams) Validate() error {
 	if err := uuid.Validate(p.PVZID); err != nil {
-		// TODO: handle err
-		return err
+		return fmt.Errorf("%w: %w", reception_domain.ErrInvalidIDFormat, err)
 	}
 
 	if p.UserRole != auth_domain.RoleEmployee {
-		return errors.New("only employee can create reception")
+		return reception_domain.ErrAccessDenied
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
@@ -50,7 +51,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	reception, err := h.svc.Create(r.Context(), params)
 	if err != nil {
-		httpcommon.JSONError(w, http.StatusBadRequest, err)
+		switch {
+		case errors.Is(err, reception_domain.ErrAccessDenied):
+			httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
+		case errors.Is(err, reception_domain.ErrFoundOpenedReception):
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("reception already exists"))
+		default:
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request"))
+		}
 		return
 	}
 

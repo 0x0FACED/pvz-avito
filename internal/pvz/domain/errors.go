@@ -12,7 +12,7 @@ var (
 	// create
 	ErrUnsupportedCity = errors.New("pvz: unsupported city")
 	// create
-	ErrInvalidRole = errors.New("pvz: only moderators can create new pvz")
+	ErrAccessDenied = errors.New("pvz: only moderators can create new pvz")
 )
 
 var (

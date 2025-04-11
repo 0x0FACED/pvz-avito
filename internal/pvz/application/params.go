@@ -29,7 +29,7 @@ func (p CreateParams) Validate() error {
 	}
 
 	if p.UserRole != auth_domain.RoleModerator {
-		return pvz_domain.ErrInvalidRole
+		return pvz_domain.ErrAccessDenied
 	}
 
 	return nil
@@ -73,7 +73,7 @@ func (p CloseLastReceptionParams) Validate() error {
 	}
 
 	if p.UserRole != auth_domain.RoleEmployee {
-		return pvz_domain.ErrInvalidRole
+		return pvz_domain.ErrAccessDenied
 	}
 
 	return nil
@@ -86,11 +86,11 @@ type DeleteLastProductParams struct {
 
 func (p DeleteLastProductParams) Validate() error {
 	if err := uuid.Validate(p.PVZID); err != nil {
-		return errors.New("invalid pvz id")
+		return fmt.Errorf("%w: %w", pvz_domain.ErrInvalidIDFormat, err)
 	}
 
 	if p.UserRole != auth_domain.RoleEmployee {
-		return errors.New("only employee can delete products")
+		return pvz_domain.ErrAccessDenied
 	}
 
 	return nil

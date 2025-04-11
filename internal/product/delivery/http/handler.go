@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
@@ -32,13 +33,13 @@ func (h Handler) RegisterRoutes(mux *http.ServeMux) {
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var req CreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request body"))
 		return
 	}
 
 	claims, ok := r.Context().Value("user").(*httpcommon.Claims)
 	if !ok {
-		http.Error(w, "User not found in context", http.StatusBadRequest)
+		httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
 		return
 	}
 
@@ -50,7 +51,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	product, err := h.svc.Create(r.Context(), params)
 	if err != nil {
-		httpcommon.JSONError(w, http.StatusBadRequest, err)
+		switch {
+		case errors.Is(err, product_domain.ErrAccessDenied):
+			httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
+		case errors.Is(err, product_domain.ErrReceptionNotFound):
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("reception not found"))
+		default:
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request"))
+		}
 		return
 	}
 

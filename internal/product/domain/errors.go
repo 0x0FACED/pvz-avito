@@ -10,4 +10,6 @@ var (
 	ErrNoProductsToDelete = errors.New("product: no products to delete")
 
 	ErrInvalidProductType = errors.New("product: invalid product type")
+	ErrInvalidIDFormat    = errors.New("product: invalid id format")
+	ErrAccessDenied       = errors.New("product: only employee can add new products")
 )

@@ -50,9 +50,16 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.svc.Register(r.Context(), params)
 	if err != nil {
-		// TODO: change
-		status := http.StatusInternalServerError
-		http.Error(w, err.Error(), status)
+		switch {
+		case errors.Is(err, auth_domain.ErrUserAlreadyExists):
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("user already exists"))
+		case errors.Is(err, auth_domain.ErrHashPassword),
+			errors.Is(err, auth_domain.ErrInvalidPassword),
+			errors.Is(err, auth_domain.ErrInvalidEmail):
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid login or password"))
+		default:
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request"))
+		}
 		return
 	}
 
@@ -79,9 +86,17 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.svc.Login(r.Context(), params)
 	if err != nil {
-		// TODO: change
-		status := http.StatusInternalServerError
-		http.Error(w, err.Error(), status)
+		switch {
+		case errors.Is(err, auth_domain.ErrUserAlreadyExists):
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("user already exists"))
+		case errors.Is(err, auth_domain.ErrUserNotFound),
+			errors.Is(err, auth_domain.ErrHashPassword),
+			errors.Is(err, auth_domain.ErrInvalidPassword),
+			errors.Is(err, auth_domain.ErrInvalidEmail):
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid login or password"))
+		default:
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request"))
+		}
 		return
 	}
 

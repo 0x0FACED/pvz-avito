@@ -1,7 +1,7 @@
 package application
 
 import (
-	"errors"
+	"fmt"
 
 	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
 	product_domain "github.com/0x0FACED/pvz-avito/internal/product/domain"
@@ -15,17 +15,16 @@ type CreateParams struct {
 }
 
 func (p CreateParams) Validate() error {
-	// TODO: refactor
 	if p.Type != product_domain.Shoes && p.Type != product_domain.Electronics && p.Type != product_domain.Clothes {
-		return errors.New("unsupported product type")
+		return fmt.Errorf("%w: %s", product_domain.ErrInvalidProductType, p.Type)
 	}
 
 	if err := uuid.Validate(p.PVZID); err != nil {
-		return errors.New("not uuid")
+		return fmt.Errorf("%w: %w", product_domain.ErrInvalidIDFormat, err)
 	}
 
 	if p.UserRole != auth_domain.RoleEmployee {
-		return errors.New("only employee can add products")
+		return product_domain.ErrAccessDenied
 	}
 
 	return nil

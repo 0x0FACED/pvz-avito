@@ -10,6 +10,7 @@ import (
 
 	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
 	"github.com/0x0FACED/pvz-avito/internal/pkg/httpcommon"
+	product_domain "github.com/0x0FACED/pvz-avito/internal/product/domain"
 	"github.com/0x0FACED/pvz-avito/internal/pvz/application"
 	pvz_domain "github.com/0x0FACED/pvz-avito/internal/pvz/domain"
 	reception_domain "github.com/0x0FACED/pvz-avito/internal/reception/domain"
@@ -42,13 +43,13 @@ func (h Handler) RegisterRoutes(mux *http.ServeMux) {
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var req createRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		httpcommon.JSONError(w, http.StatusForbidden, errors.New("invalid request body"))
 		return
 	}
 
 	claims, ok := r.Context().Value("user").(*httpcommon.Claims)
 	if !ok {
-		http.Error(w, "User not found in context", http.StatusBadRequest)
+		httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
 		return
 	}
 
@@ -61,9 +62,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	pvz, err := h.svc.Create(r.Context(), params)
 	if err != nil {
-		// TODO: change
-		status := http.StatusInternalServerError
-		http.Error(w, err.Error(), status)
+		switch {
+		case errors.Is(err, pvz_domain.ErrAccessDenied):
+			httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
+		case errors.Is(err, pvz_domain.ErrPVZAlreadyExists):
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("pvz already exists"))
+		default:
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request"))
+		}
 		return
 	}
 
@@ -81,7 +87,7 @@ func (h *Handler) CloseLastReception(w http.ResponseWriter, r *http.Request) {
 
 	claims, ok := r.Context().Value("user").(*httpcommon.Claims)
 	if !ok {
-		http.Error(w, "User not found in context", http.StatusBadRequest)
+		httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
 		return
 	}
 
@@ -92,9 +98,14 @@ func (h *Handler) CloseLastReception(w http.ResponseWriter, r *http.Request) {
 
 	reception, err := h.svc.CloseLastReception(r.Context(), params)
 	if err != nil {
-		// TODO: change
-		status := http.StatusInternalServerError
-		http.Error(w, err.Error(), status)
+		switch {
+		case errors.Is(err, pvz_domain.ErrAccessDenied):
+			httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
+		case errors.Is(err, reception_domain.ErrNoOpenReception):
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("reception already closed"))
+		default:
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request"))
+		}
 		return
 	}
 
@@ -113,7 +124,7 @@ func (h *Handler) DeleteLastProduct(w http.ResponseWriter, r *http.Request) {
 
 	claims, ok := r.Context().Value("user").(*httpcommon.Claims)
 	if !ok {
-		http.Error(w, "User not found in context", http.StatusBadRequest)
+		httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
 		return
 	}
 
@@ -124,9 +135,16 @@ func (h *Handler) DeleteLastProduct(w http.ResponseWriter, r *http.Request) {
 
 	err := h.svc.DeleteLastProduct(r.Context(), params)
 	if err != nil {
-		// TODO: change
-		status := http.StatusInternalServerError
-		http.Error(w, err.Error(), status)
+		switch {
+		case errors.Is(err, pvz_domain.ErrAccessDenied):
+			httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
+		case errors.Is(err, reception_domain.ErrNoOpenReception):
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("no open reception found"))
+		case errors.Is(err, product_domain.ErrNoProductsToDelete):
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("no products to delete"))
+		default:
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request"))
+		}
 		return
 	}
 
@@ -146,19 +164,21 @@ func (h *Handler) ListWithReceptions(w http.ResponseWriter, r *http.Request) {
 		limit     = 10
 	)
 
+	resp := make([]*ListResponse, 0)
+
 	if startDateStr != "" {
 		t, err := time.Parse("2006-01-02", startDateStr)
 		if err != nil {
-			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("start date must be YYYY-MM-DD format"))
+			httpcommon.JSONResponse(w, http.StatusOK, resp)
 			return
 		}
 		startDate = &t
 	}
+
 	if endDateStr != "" {
 		t, err := time.Parse("2006-01-02", endDateStr)
 		if err != nil {
-			// TODO: handle err
-			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("end date must be YYYY-MM-DD format"))
+			httpcommon.JSONResponse(w, http.StatusOK, resp)
 			return
 		}
 		endDate = &t
@@ -167,8 +187,7 @@ func (h *Handler) ListWithReceptions(w http.ResponseWriter, r *http.Request) {
 	if pageStr != "" {
 		p, err := strconv.Atoi(pageStr)
 		if err != nil || p < 1 {
-			// TODO: handle err
-			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid page value"))
+			httpcommon.JSONResponse(w, http.StatusOK, resp)
 			return
 		}
 		page = p
@@ -177,8 +196,7 @@ func (h *Handler) ListWithReceptions(w http.ResponseWriter, r *http.Request) {
 	if limitStr != "" {
 		l, err := strconv.Atoi(limitStr)
 		if err != nil || l < 1 {
-			// TODO: handle err
-			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid limit value"))
+			httpcommon.JSONResponse(w, http.StatusOK, resp)
 			return
 		}
 		limit = l
@@ -193,11 +211,9 @@ func (h *Handler) ListWithReceptions(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.ListWithReceptions(r.Context(), params)
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		httpcommon.JSONResponse(w, http.StatusOK, resp)
 		return
 	}
-
-	resp := make([]*ListResponse, 0, len(result))
 
 	// TODO: separate
 	for _, val := range result {
