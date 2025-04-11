@@ -72,7 +72,7 @@ func (r *PVZPostgresRepository) ListWithReceptions(ctx context.Context, startDat
 		       r.id, r.date_time, r.pvz_id, r.status,
 		       pr.id, pr.date_time, pr.type, pr.reception_id
 		FROM avito.pvz p
-		LEFT JOIN avito.receptions r ON r.pvz_id = p.id
+		RIGHT JOIN avito.receptions r ON r.pvz_id = p.id
 		LEFT JOIN avito.products pr ON pr.reception_id = r.id
 		WHERE (r.date_time BETWEEN @start_date AND @end_date OR @start_date IS NULL)
 		ORDER BY p.registration_date DESC, r.date_time DESC
@@ -125,8 +125,8 @@ func (r *PVZPostgresRepository) ListWithReceptions(ctx context.Context, startDat
 		if _, ok := result[pvzID]; !ok {
 			result[pvzID] = &pvz_domain.PVZWithReceptions{
 				PVZ: &pvz_domain.PVZ{
-					ID:               pvzID,
-					RegistrationDate: pvzRegDate,
+					ID:               &pvzID,
+					RegistrationDate: &pvzRegDate,
 					City:             pvz_domain.City(pvzCity),
 				},
 				Receptions: []*pvz_domain.ReceptionWithProducts{},
