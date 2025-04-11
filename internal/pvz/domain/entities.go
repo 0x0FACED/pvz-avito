@@ -25,8 +25,8 @@ func (c City) Validate() error {
 }
 
 type PVZ struct {
-	ID               string
-	RegistrationDate time.Time
+	ID               *string
+	RegistrationDate *time.Time
 	City             City
 }
 
