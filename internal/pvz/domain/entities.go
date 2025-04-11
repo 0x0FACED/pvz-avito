@@ -16,6 +16,10 @@ const (
 	Kazan  City = "Казань"
 )
 
+func (c City) String() string {
+	return string(c)
+}
+
 func (c City) Validate() error {
 	if c != Moscow && c != SPb && c != Kazan {
 		return fmt.Errorf("unsupported city: %s", c)
