@@ -87,7 +87,7 @@ func TestRegisterUser(t *testing.T) {
 
 			if tt.expectErr != nil {
 				require.Error(t, err)
-				assert.ErrorContains(t, err, tt.expectErr.Error())
+				assert.ErrorIs(t, err, tt.expectErr)
 			} else {
 				assert.NoError(t, err)
 			}
