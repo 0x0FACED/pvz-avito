@@ -6,13 +6,13 @@ import (
 	"net/http"
 
 	"github.com/0x0FACED/pvz-avito/internal/auth/application"
-	"github.com/0x0FACED/pvz-avito/internal/auth/domain"
+	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
 	"github.com/0x0FACED/pvz-avito/internal/pkg/httpcommon"
 )
 
 type AuthService interface {
-	Register(ctx context.Context, params application.RegisterParams) (*domain.User, error)
-	Login(ctx context.Context, params application.LoginParams) (*domain.User, error)
+	Register(ctx context.Context, params application.RegisterParams) (*auth_domain.User, error)
+	Login(ctx context.Context, params application.LoginParams) (*auth_domain.User, error)
 }
 
 type Handler struct {
@@ -35,22 +35,16 @@ func (h Handler) RegisterRoutes(mux *http.ServeMux) {
 }
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
-	type registerRequest struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Role     string `json:"role"`
-	}
-
-	var req registerRequest
+	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	params := application.RegisterParams{
-		Email:    domain.Email(req.Email),
+		Email:    auth_domain.Email(req.Email),
 		Password: req.Password,
-		Role:     domain.Role(req.Role),
+		Role:     auth_domain.Role(req.Role),
 	}
 
 	user, err := h.svc.Register(r.Context(), params)
@@ -61,13 +55,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type registerResponse struct {
-		ID    string `json:"id"`
-		Email string `json:"email"`
-		Role  string `json:"role"`
-	}
-
-	resp := registerResponse{
+	resp := RegisterResponse{
 		ID:    user.ID,
 		Email: user.Email.String(),
 		Role:  user.Role.String(),
@@ -77,19 +65,14 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
-	type loginRequest struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	var req loginRequest
+	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	params := application.LoginParams{
-		Email:    domain.Email(req.Email),
+		Email:    auth_domain.Email(req.Email),
 		Password: req.Password,
 	}
 
@@ -109,23 +92,20 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(token))
+	httpcommon.DefaultResponse(w, http.StatusOK, []byte(token))
 }
 
 func (h *Handler) DummyLogin(w http.ResponseWriter, r *http.Request) {
-	type dummyLoginRequest struct {
-		Role string `json:"role"`
-	}
-
-	var req dummyLoginRequest
+	var req DummyLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	if req.Role != "moderator" && req.Role != "employee" {
-		http.Error(w, "Invalid role", http.StatusBadRequest)
+	role := auth_domain.Role(req.Role)
+
+	if err := role.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -137,6 +117,5 @@ func (h *Handler) DummyLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(token))
+	httpcommon.DefaultResponse(w, http.StatusOK, []byte(token))
 }

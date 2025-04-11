@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 
 	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
 	"github.com/0x0FACED/pvz-avito/internal/pkg/httpcommon"
@@ -31,12 +30,7 @@ func (h Handler) RegisterRoutes(mux *http.ServeMux) {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	type createRequest struct {
-		Type  string `json:"type"`
-		PVZID string `json:"pvzId"`
-	}
-
-	var req createRequest
+	var req CreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -60,17 +54,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type createResponse struct {
-		ID          string                     `json:"id"`
-		DateTime    time.Time                  `json:"dateTime"`
-		Type        product_domain.ProductType `json:"type"`
-		ReceptionID string                     `json:"receptionId"`
-	}
-
-	resp := createResponse{
+	resp := CreateResponse{
 		ID:          product.ID,
 		DateTime:    product.DateTime,
-		Type:        product.Type,
+		Type:        product.Type.String(),
 		ReceptionID: product.ReceptionID,
 	}
 

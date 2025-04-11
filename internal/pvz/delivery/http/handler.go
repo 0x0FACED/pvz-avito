@@ -41,12 +41,6 @@ func (h Handler) RegisterRoutes(mux *http.ServeMux) {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	type createRequest struct {
-		ID               *string    `json:"id,omitempty"`
-		RegistrationDate *time.Time `json:"registrationDate,omitempty"`
-		City             string     `json:"city"`
-	}
-
 	var req createRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -63,7 +57,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		ID:               req.ID,
 		RegistrationDate: req.RegistrationDate,
 		City:             pvz_domain.City(req.City),
-		UserRole:         claims.Role,
+		UserRole:         auth_domain.Role(claims.Role),
 	}
 
 	pvz, err := h.svc.Create(r.Context(), params)
@@ -74,16 +68,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type createResponse struct {
-		ID               *string         `json:"id,omitempty"`
-		RegistrationDate *time.Time      `json:"registrationDate,omitempty"`
-		City             pvz_domain.City `json:"city"`
-	}
-
-	resp := createResponse{
+	resp := CreateResponse{
 		ID:               pvz.ID,
 		RegistrationDate: pvz.RegistrationDate,
-		City:             pvz.City,
+		City:             pvz.City.String(),
 	}
 
 	httpcommon.JSONResponse(w, http.StatusCreated, resp)
@@ -111,18 +99,11 @@ func (h *Handler) CloseLastReception(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type closeResponse struct {
-		ID       string                  `json:"id"`
-		DateTime time.Time               `json:"dateTime"`
-		PVZID    string                  `json:"pvzId"`
-		Status   reception_domain.Status `json:"status"`
-	}
-
-	resp := closeResponse{
+	resp := CloseResponse{
 		ID:       reception.ID,
 		DateTime: reception.DateTime,
 		PVZID:    reception.PVZID,
-		Status:   reception.Status,
+		Status:   reception.Status.String(),
 	}
 
 	httpcommon.JSONResponse(w, http.StatusOK, resp)
@@ -217,41 +198,11 @@ func (h *Handler) ListWithReceptions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: separate
-	type product struct {
-		ID          string    `json:"id"`
-		DateTime    time.Time `json:"dateTime"`
-		Type        string    `json:"type"`
-		ReceptionID string    `json:"receptionId"`
-	}
-
-	// TODO: separate
-	type reception struct {
-		ID       string    `json:"id"`
-		DateTime time.Time `json:"dateTime"`
-		PVZID    string    `json:"pvzId"`
-		Status   string    `json:"status"`
-		Products []product `json:"products"`
-	}
-
-	// TODO: separate
-	type pvz struct {
-		ID               string    `json:"id"`
-		RegistrationDate time.Time `json:"registrationDate"`
-		City             string    `json:"city"`
-	}
-
-	// TODO: separate
-	type listResponse struct {
-		PVZ        pvz         `json:"pvz"`
-		Receptions []reception `json:"receptions"`
-	}
-
-	resp := make([]*listResponse, 0, len(result))
+	resp := make([]*ListResponse, 0, len(result))
 
 	// TODO: separate
 	for _, val := range result {
-		resp = append(resp, &listResponse{
+		resp = append(resp, &ListResponse{
 			PVZ: pvz{
 				ID:               *val.PVZ.ID,
 				RegistrationDate: *val.PVZ.RegistrationDate,
