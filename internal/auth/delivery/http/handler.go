@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/0x0FACED/pvz-avito/internal/auth/application"
@@ -98,22 +99,20 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DummyLogin(w http.ResponseWriter, r *http.Request) {
 	var req DummyLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request body"))
 		return
 	}
 
 	role := auth_domain.Role(req.Role)
 
 	if err := role.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		httpcommon.JSONError(w, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := h.jwtManager.GenerateDummy(req.Role)
 	if err != nil {
-		// TODO: change
-		status := http.StatusInternalServerError
-		http.Error(w, err.Error(), status)
+		httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request"))
 		return
 	}
 
