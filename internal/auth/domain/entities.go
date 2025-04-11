@@ -2,6 +2,7 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"net/mail"
 )
@@ -13,9 +14,13 @@ const (
 	RoleModerator Role = "moderator"
 )
 
+var (
+	ErrInvalidRole = errors.New("invalid role")
+)
+
 func (r Role) Validate() error {
 	if r != RoleModerator && r != RoleEmployee {
-		return fmt.Errorf("unsupported role: %s", r)
+		return fmt.Errorf("%w: %s", ErrInvalidRole, r)
 	}
 	return nil
 }
