@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -55,6 +56,19 @@ func NewZerologLogger(cfg config.LoggerConfig, opts ...ConsoleWriterOption) (*Ze
 		logger: logger,
 		cfg:    cfg,
 	}, nil
+}
+
+func NewTestLogger() *ZerologLogger {
+	logger := zerolog.New(io.Discard).
+		Level(zerolog.DebugLevel).
+		With().
+		Timestamp().
+		Logger()
+
+	return &ZerologLogger{
+		logger: logger,
+		cfg:    config.LoggerConfig{},
+	}
 }
 
 // Создание "именованного" логгера — для фичи
