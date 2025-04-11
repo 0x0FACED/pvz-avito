@@ -28,18 +28,19 @@ func NewProductService(productRepo product_domain.ProductRepository, receptionRe
 
 func (s *ProductService) Create(ctx context.Context, params CreateParams) (*product_domain.Product, error) {
 	if err := params.Validate(); err != nil {
-		// TODO: handle err correctly
+		s.log.Error().Any("params", params).Err(err).Msg("CreateProduct")
 		return nil, err
 	}
 
 	lastReception, err := s.receptionRepo.FindLastOpenByPVZ(ctx, params.PVZID)
-	if err != nil {
-		// TODO: handle err
+	if err != nil && !errors.Is(err, reception_domain.ErrNoOpenReception) {
+		s.log.Error().Any("params", params).Err(err).Msg("Error finding last open reception")
 		return nil, err
 	}
 
 	if lastReception == nil {
-		return nil, errors.New("there is no open reception in this pvz")
+		s.log.Error().Any("params", params).Err(err).Msg("No open reception found")
+		return nil, reception_domain.ErrNoOpenReception
 	}
 
 	product := &product_domain.Product{
@@ -48,10 +49,13 @@ func (s *ProductService) Create(ctx context.Context, params CreateParams) (*prod
 		Type:        params.Type,
 		ReceptionID: lastReception.ID,
 	}
+
 	created, err := s.productRepo.Create(ctx, product)
 	if err != nil {
+		s.log.Error().Any("params", params).Any("product", product).Err(err).Msg("Error creating product")
 		return nil, err
 	}
 
+	s.log.Info().Any("params", params).Any("product", created).Msg("CreateProduct successful")
 	return created, nil
 }

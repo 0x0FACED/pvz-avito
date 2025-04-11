@@ -23,6 +23,7 @@ func NewAuthService(repo auth_domain.UserRepository, l *logger.ZerologLogger) *A
 
 func (s *AuthService) Register(ctx context.Context, params RegisterParams) (*auth_domain.User, error) {
 	if err := params.Validate(); err != nil {
+		s.log.Error().Any("params", params).Err(err).Msg("Register")
 		return nil, err
 	}
 
@@ -30,6 +31,7 @@ func (s *AuthService) Register(ctx context.Context, params RegisterParams) (*aut
 	// separate cost to .env file
 	hash, err := hashPasswordString(params.Password, 4)
 	if err != nil {
+		s.log.Error().Any("params", params).Err(err).Msg("Error hash password")
 		return nil, err
 	}
 
@@ -42,26 +44,33 @@ func (s *AuthService) Register(ctx context.Context, params RegisterParams) (*aut
 
 	created, err := s.repo.Create(ctx, user)
 	if err != nil {
+		s.log.Error().Any("params", params).Any("user", user).Err(err).Msg("Error creating user")
 		return nil, err
 	}
+
+	s.log.Info().Any("params", params).Any("user", user).Msg("Register successful")
 
 	return created, nil
 }
 
 func (s *AuthService) Login(ctx context.Context, params LoginParams) (*auth_domain.User, error) {
 	if err := params.Validate(); err != nil {
+		s.log.Error().Any("params", params).Err(err).Msg("Login")
 		return nil, err
 	}
 
 	user, err := s.repo.FindByEmail(ctx, params.Email.String())
 	if err != nil {
+		s.log.Error().Any("params", params).Err(err).Msg("Error finding user by email")
 		return nil, err
 	}
 
 	err = compareHashAndPassword(user.Password, params.Password)
 	if err != nil {
+		s.log.Error().Any("params", params).Any("user", user).Err(err).Msg("Password mismatch")
 		return nil, err
 	}
 
+	s.log.Info().Any("params", params).Any("user", user).Msg("Login successful")
 	return user, nil
 }

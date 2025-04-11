@@ -36,6 +36,7 @@ func NewPVZService(
 
 func (s *PVZService) Create(ctx context.Context, params CreateParams) (*pvz_domain.PVZ, error) {
 	if err := params.Validate(); err != nil {
+		s.log.Error().Any("params", params).Err(err).Msg("CreatePVZ")
 		return nil, err
 	}
 
@@ -46,8 +47,8 @@ func (s *PVZService) Create(ctx context.Context, params CreateParams) (*pvz_doma
 	}
 
 	if pvz.ID == nil {
-		uuidStr := uuid.NewString()
-		pvz.ID = &uuidStr
+		id := uuid.NewString()
+		pvz.ID = &id
 	}
 	if pvz.RegistrationDate == nil {
 		now := time.Now()
@@ -56,55 +57,67 @@ func (s *PVZService) Create(ctx context.Context, params CreateParams) (*pvz_doma
 
 	created, err := s.pvzRepo.Create(ctx, &pvz)
 	if err != nil {
+		s.log.Error().Any("params", params).Any("pvz", pvz).Err(err).Msg("Error creating PVZ")
 		return nil, err
 	}
+
+	s.log.Info().Any("params", params).Any("pvz", created).Msg("CreatePVZ successful")
 
 	return created, nil
 }
 
 func (s *PVZService) CloseLastReception(ctx context.Context, params CloseLastReceptionParams) (*reception_domain.Reception, error) {
 	if err := params.Validate(); err != nil {
+		s.log.Error().Any("params", params).Err(err).Msg("CloseLastReception")
 		return nil, err
 	}
 
 	reception, err := s.receptionRepo.CloseLastReception(ctx, params.PVZID)
 	if err != nil {
+		s.log.Error().Any("params", params).Err(err).Msg("Error closing last reception")
 		return nil, err
 	}
+
+	s.log.Info().Any("params", params).Any("reception", reception).Msg("CloseLastReception successful")
 
 	return reception, nil
 }
 
 func (s *PVZService) DeleteLastProduct(ctx context.Context, params DeleteLastProductParams) error {
 	if err := params.Validate(); err != nil {
+		s.log.Error().Any("params", params).Err(err).Msg("DeleteLastProduct")
 		return err
 	}
 
 	reception, err := s.receptionRepo.FindLastOpenByPVZ(ctx, params.PVZID)
-	if err != nil {
-		// TODO: handle err
+	if err != nil && !errors.Is(err, reception_domain.ErrNoOpenReception) {
+		s.log.Error().Any("params", params).Err(err).Msg("Error finding last open reception")
 		return err
 	}
 
 	if reception == nil {
-		return errors.New("reception is closed")
+		s.log.Error().Any("params", params).Err(reception_domain.ErrNoOpenReception).Msg("No open reception")
+		return reception_domain.ErrNoOpenReception
 	}
 
 	err = s.productRepo.DeleteLastFromReception(ctx, reception.ID)
 	if err != nil {
-		// TODO: handle err
+		s.log.Error().Any("params", params).Any("reception", reception).Err(err).Msg("Error deleting last product")
 		return err
 	}
 
+	s.log.Info().Any("params", params).Any("reception", reception).Msg("DeleteLastProduct successful")
 	return nil
 }
 
 func (s *PVZService) ListWithReceptions(ctx context.Context, params ListWithReceptionsParams) ([]*pvz_domain.PVZWithReceptions, error) {
 	pvzWithReceptions, err := s.pvzRepo.ListWithReceptions(ctx, params.StartDate, params.EndDate, *params.Page, *params.Limit)
 	if err != nil {
-		// TODO: handle err
+		s.log.Error().Any("params", params).Err(err).Msg("ListWithReceptions")
 		return nil, err
 	}
+
+	s.log.Info().Any("params", params).Any("resultCount", len(pvzWithReceptions)).Msg("ListWithReceptions successful")
 
 	return pvzWithReceptions, nil
 }
