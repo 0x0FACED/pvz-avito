@@ -2,9 +2,11 @@ package application
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/0x0FACED/pvz-avito/internal/pkg/logger"
+	product_domain "github.com/0x0FACED/pvz-avito/internal/product/domain"
 	pvz_domain "github.com/0x0FACED/pvz-avito/internal/pvz/domain"
 	reception_domain "github.com/0x0FACED/pvz-avito/internal/reception/domain"
 	"github.com/google/uuid"
@@ -13,14 +15,21 @@ import (
 type PVZService struct {
 	pvzRepo       pvz_domain.PVZRepository
 	receptionRepo reception_domain.ReceptionRepository
+	productRepo   product_domain.ProductRepository
 
 	log *logger.ZerologLogger
 }
 
-func NewPVZService(pvzRepo pvz_domain.PVZRepository, receptionRepo reception_domain.ReceptionRepository, l *logger.ZerologLogger) *PVZService {
+func NewPVZService(
+	pvzRepo pvz_domain.PVZRepository,
+	receptionRepo reception_domain.ReceptionRepository,
+	productRepo product_domain.ProductRepository,
+	l *logger.ZerologLogger,
+) *PVZService {
 	return &PVZService{
 		pvzRepo:       pvzRepo,
 		receptionRepo: receptionRepo,
+		productRepo:   productRepo,
 		log:           l,
 	}
 }
@@ -76,6 +85,30 @@ func (s *PVZService) CloseLastReception(ctx context.Context, params CloseLastRec
 	}
 
 	return reception, nil
+}
+
+func (s *PVZService) DeleteLastProduct(ctx context.Context, params DeleteLastProductParams) error {
+	if err := params.Validate(); err != nil {
+		return err
+	}
+
+	reception, err := s.receptionRepo.FindLastOpenByPVZ(ctx, params.PVZID)
+	if err != nil {
+		// TODO: handle err
+		return err
+	}
+
+	if reception == nil {
+		return errors.New("reception is closed")
+	}
+
+	err = s.productRepo.DeleteLastFromReception(ctx, reception.ID)
+	if err != nil {
+		// TODO: handle err
+		return err
+	}
+
+	return nil
 }
 
 func (s *PVZService) ListWithReceptions(ctx context.Context, params ListWithReceptionsParams) ([]*pvz_domain.PVZWithReceptions, error) {
