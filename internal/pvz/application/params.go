@@ -13,7 +13,7 @@ type CreateParams struct {
 	ID               *string
 	RegistrationDate *time.Time
 	City             pvz_domain.City
-	UserRole         string
+	UserRole         auth_domain.Role
 }
 
 func (p CreateParams) Validate() error {
@@ -29,7 +29,7 @@ func (p CreateParams) Validate() error {
 	}
 
 	// TODO: refactor
-	if p.UserRole != "moderator" {
+	if p.UserRole != auth_domain.RoleModerator {
 		return errors.New("only moderator can create new pvz")
 	}
 
