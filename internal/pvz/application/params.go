@@ -79,3 +79,20 @@ func (p CloseLastReceptionParams) Validate() error {
 
 	return nil
 }
+
+type DeleteLastProductParams struct {
+	PVZID    string
+	UserRole auth_domain.Role
+}
+
+func (p DeleteLastProductParams) Validate() error {
+	if err := uuid.Validate(p.PVZID); err != nil {
+		return errors.New("invalid pvz id")
+	}
+
+	if p.UserRole != auth_domain.RoleEmployee {
+		return errors.New("only employee can delete products")
+	}
+
+	return nil
+}
