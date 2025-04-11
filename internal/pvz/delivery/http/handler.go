@@ -3,7 +3,9 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	auth_domain "github.com/0x0FACED/pvz-avito/internal/auth/domain"
@@ -72,8 +74,8 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type createResponse struct {
-		ID               string          `json:"id"`
-		RegistrationDate time.Time       `json:"registrationDate"`
+		ID               *string         `json:"id,omitempty"`
+		RegistrationDate *time.Time      `json:"registrationDate,omitempty"`
 		City             pvz_domain.City `json:"city"`
 	}
 
@@ -122,7 +124,7 @@ func (h *Handler) CloseLastReception(w http.ResponseWriter, r *http.Request) {
 		Status:   reception.Status,
 	}
 
-	httpcommon.JSONResponse(w, http.StatusCreated, resp)
+	httpcommon.JSONResponse(w, http.StatusOK, resp)
 }
 
 func (h *Handler) DeleteLastProduct(w http.ResponseWriter, r *http.Request) {
@@ -131,6 +133,133 @@ func (h *Handler) DeleteLastProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ListWithReceptions(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte(`{"message":"not impl"}`))
+	startDateStr := r.URL.Query().Get("startDate")
+	endDateStr := r.URL.Query().Get("endDate")
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
+
+	var (
+		startDate *time.Time
+		endDate   *time.Time
+		page      = 1
+		limit     = 10
+	)
+
+	if startDateStr != "" {
+		t, err := time.Parse("2006-01-02", startDateStr)
+		if err != nil {
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("start date must be YYYY-MM-DD format"))
+			return
+		}
+		startDate = &t
+	}
+	if endDateStr != "" {
+		t, err := time.Parse("2006-01-02", endDateStr)
+		if err != nil {
+			// TODO: handle err
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("end date must be YYYY-MM-DD format"))
+			return
+		}
+		endDate = &t
+	}
+
+	if pageStr != "" {
+		p, err := strconv.Atoi(pageStr)
+		if err != nil || p < 1 {
+			// TODO: handle err
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid page value"))
+			return
+		}
+		page = p
+	}
+
+	if limitStr != "" {
+		l, err := strconv.Atoi(limitStr)
+		if err != nil || l < 1 {
+			// TODO: handle err
+			httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid limit value"))
+			return
+		}
+		limit = l
+	}
+
+	params := application.ListWithReceptionsParams{
+		StartDate: startDate,
+		EndDate:   endDate,
+		Page:      &page,
+		Limit:     &limit,
+	}
+
+	result, err := h.svc.ListWithReceptions(r.Context(), params)
+	if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// TODO: separate
+	type product struct {
+		ID          string    `json:"id"`
+		DateTime    time.Time `json:"dateTime"`
+		Type        string    `json:"type"`
+		ReceptionID string    `json:"receptionId"`
+	}
+
+	// TODO: separate
+	type reception struct {
+		ID       string    `json:"id"`
+		DateTime time.Time `json:"dateTime"`
+		PVZID    string    `json:"pvzId"`
+		Status   string    `json:"status"`
+		Products []product `json:"products"`
+	}
+
+	// TODO: separate
+	type pvz struct {
+		ID               string    `json:"id"`
+		RegistrationDate time.Time `json:"registrationDate"`
+		City             string    `json:"city"`
+	}
+
+	// TODO: separate
+	type listResponse struct {
+		PVZ        pvz         `json:"pvz"`
+		Receptions []reception `json:"receptions"`
+	}
+
+	resp := make([]*listResponse, 0, len(result))
+
+	// TODO: separate
+	for _, val := range result {
+		resp = append(resp, &listResponse{
+			PVZ: pvz{
+				ID:               *val.PVZ.ID,
+				RegistrationDate: *val.PVZ.RegistrationDate,
+				City:             string(val.PVZ.City),
+			},
+			Receptions: func() []reception {
+				var receptions []reception
+				for _, rec := range val.Receptions {
+					var products []product
+					for _, prod := range rec.Products {
+						products = append(products, product{
+							ID:          prod.ID,
+							DateTime:    prod.DateTime,
+							Type:        string(prod.Type),
+							ReceptionID: prod.ReceptionID,
+						})
+					}
+					receptions = append(receptions, reception{
+						ID:       rec.Reception.ID,
+						DateTime: rec.Reception.DateTime,
+						PVZID:    rec.Reception.PVZID,
+						Status:   string(rec.Reception.Status),
+						Products: products,
+					})
+				}
+				return receptions
+			}(),
+		})
+	}
+
+	httpcommon.JSONResponse(w, http.StatusOK, resp)
 }
