@@ -2,7 +2,6 @@
 package domain
 
 import (
-	"errors"
 	"fmt"
 	"net/mail"
 )
@@ -12,10 +11,6 @@ type Role string
 const (
 	RoleEmployee  Role = "employee"
 	RoleModerator Role = "moderator"
-)
-
-var (
-	ErrInvalidRole = errors.New("invalid role")
 )
 
 func (r Role) Validate() error {

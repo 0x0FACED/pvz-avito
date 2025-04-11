@@ -2,9 +2,12 @@ package postgres
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
-	"github.com/0x0FACED/pvz-avito/internal/reception/domain"
+	reception_domain "github.com/0x0FACED/pvz-avito/internal/reception/domain"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -16,7 +19,7 @@ func NewReceptionPostgresRepository(pgx *pgxpool.Pool) *ReceptionPostgresReposit
 	return &ReceptionPostgresRepository{pool: pgx}
 }
 
-func (r *ReceptionPostgresRepository) Create(ctx context.Context, reception *domain.Reception) (*domain.Reception, error) {
+func (r *ReceptionPostgresRepository) Create(ctx context.Context, reception *reception_domain.Reception) (*reception_domain.Reception, error) {
 	query := `
 		INSERT INTO avito.receptions (id, date_time, pvz_id, status)
 		VALUES (@id, @date_time, @pvz_id, @status)
@@ -30,19 +33,25 @@ func (r *ReceptionPostgresRepository) Create(ctx context.Context, reception *dom
 		"status":    reception.Status,
 	}
 
-	var created domain.Reception
+	var created reception_domain.Reception
 	err := r.pool.QueryRow(ctx, query, args).Scan(
 		&created.ID, &created.DateTime, &created.PVZID, &created.Status,
 	)
 	if err != nil {
-		// TODO: handle err
-		return nil, err
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			switch pgErr.Code {
+			case "23503":
+				return nil, fmt.Errorf("%w: %w", reception_domain.ErrPVZNotFound, err)
+			}
+		}
+		return nil, fmt.Errorf("%w: %w", reception_domain.ErrInternalDatabase, err)
 	}
 
 	return &created, nil
 }
 
-func (r *ReceptionPostgresRepository) FindByID(ctx context.Context, id string) (*domain.Reception, error) {
+func (r *ReceptionPostgresRepository) FindByID(ctx context.Context, id string) (*reception_domain.Reception, error) {
 	query := `
 		SELECT id, date_time, pvz_id, status
 		FROM avito.receptions
@@ -53,7 +62,7 @@ func (r *ReceptionPostgresRepository) FindByID(ctx context.Context, id string) (
 		"id": id,
 	}
 
-	reception := domain.Reception{}
+	reception := reception_domain.Reception{}
 	err := r.pool.QueryRow(ctx, query, args).Scan(
 		&reception.ID,
 		&reception.DateTime,
@@ -61,13 +70,16 @@ func (r *ReceptionPostgresRepository) FindByID(ctx context.Context, id string) (
 		&reception.Status,
 	)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("%w: %w", reception_domain.ErrReceptionNotFound, err)
+		}
+		return nil, fmt.Errorf("%w: %w", reception_domain.ErrInternalDatabase, err)
 	}
 
 	return &reception, nil
 }
 
-func (r *ReceptionPostgresRepository) FindLastOpenByPVZ(ctx context.Context, pvzID string) (*domain.Reception, error) {
+func (r *ReceptionPostgresRepository) FindLastOpenByPVZ(ctx context.Context, pvzID string) (*reception_domain.Reception, error) {
 	query := `
 		SELECT id, date_time, pvz_id, status
 		FROM avito.receptions
@@ -80,7 +92,7 @@ func (r *ReceptionPostgresRepository) FindLastOpenByPVZ(ctx context.Context, pvz
 		"pvz_id": pvzID,
 	}
 
-	reception := domain.Reception{}
+	reception := reception_domain.Reception{}
 
 	err := r.pool.QueryRow(ctx, query, args).Scan(
 		&reception.ID,
@@ -89,19 +101,19 @@ func (r *ReceptionPostgresRepository) FindLastOpenByPVZ(ctx context.Context, pvz
 		&reception.Status,
 	)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("%w: %w", reception_domain.ErrNoOpenReception, err)
 		}
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", reception_domain.ErrInternalDatabase, err)
 	}
 
 	return &reception, nil
 }
 
-func (r *ReceptionPostgresRepository) CloseLastReception(ctx context.Context, pvzID string) (*domain.Reception, error) {
+func (r *ReceptionPostgresRepository) CloseLastReception(ctx context.Context, pvzID string) (*reception_domain.Reception, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", reception_domain.ErrInternalDatabase, err)
 	}
 	defer tx.Rollback(ctx)
 
@@ -122,7 +134,7 @@ func (r *ReceptionPostgresRepository) CloseLastReception(ctx context.Context, pv
 		"pvz_id": pvzID,
 	}
 
-	reception := domain.Reception{}
+	reception := reception_domain.Reception{}
 	err = tx.QueryRow(ctx, query, args).Scan(
 		&reception.ID,
 		&reception.DateTime,
@@ -130,17 +142,20 @@ func (r *ReceptionPostgresRepository) CloseLastReception(ctx context.Context, pv
 		&reception.Status,
 	)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("%w: %w", reception_domain.ErrReceptionNotFound, err)
+		}
+		return nil, fmt.Errorf("%w: %w", reception_domain.ErrInternalDatabase, err)
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", reception_domain.ErrInternalDatabase, err)
 	}
 
 	return &reception, nil
 }
 
-func (r *ReceptionPostgresRepository) ListByPVZ(ctx context.Context, pvzID string) ([]*domain.Reception, error) {
+func (r *ReceptionPostgresRepository) ListByPVZ(ctx context.Context, pvzID string) ([]*reception_domain.Reception, error) {
 	query := `
 		SELECT id, date_time, pvz_id, status
 		FROM avito.receptions
@@ -154,13 +169,13 @@ func (r *ReceptionPostgresRepository) ListByPVZ(ctx context.Context, pvzID strin
 
 	rows, err := r.pool.Query(ctx, query, args)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", reception_domain.ErrInternalDatabase, err)
 	}
 	defer rows.Close()
 
-	var receptions []*domain.Reception
+	var receptions []*reception_domain.Reception
 	for rows.Next() {
-		var reception domain.Reception
+		var reception reception_domain.Reception
 		err := rows.Scan(
 			&reception.ID,
 			&reception.DateTime,
@@ -168,9 +183,13 @@ func (r *ReceptionPostgresRepository) ListByPVZ(ctx context.Context, pvzID strin
 			&reception.Status,
 		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%w: %w", reception_domain.ErrInternalDatabase, err)
 		}
 		receptions = append(receptions, &reception)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%w: %w", reception_domain.ErrInternalDatabase, err)
 	}
 
 	return receptions, nil

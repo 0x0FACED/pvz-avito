@@ -2,12 +2,15 @@ package postgres
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	product_domain "github.com/0x0FACED/pvz-avito/internal/product/domain"
 	pvz_domain "github.com/0x0FACED/pvz-avito/internal/pvz/domain"
 	reception_domain "github.com/0x0FACED/pvz-avito/internal/reception/domain"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -37,33 +40,16 @@ func (r *PVZPostgresRepository) Create(ctx context.Context, pvz *pvz_domain.PVZ)
 		&created.ID, &created.RegistrationDate, &created.City,
 	)
 	if err != nil {
-		// TODO: handle err
-		return nil, err
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr); pgErr.Code == "23505" {
+			return nil, fmt.Errorf("%w: %w", pvz_domain.ErrPVZAlreadyExists, err)
+		}
+		// in openapi wrote that 201 and 400 codes only.
+		// so using domain.ErrInternalDatabase as invalid request (400)
+		return nil, fmt.Errorf("%w: %w", pvz_domain.ErrInternalDatabase, err)
 	}
 
 	return &created, nil
-}
-
-func (r *PVZPostgresRepository) FindByID(ctx context.Context, id string) (*pvz_domain.PVZ, error) {
-	query := `
-		SELECT id, registration_date, city
-		FROM avito.pvz
-		WHERE id = @id
-	`
-
-	args := pgx.NamedArgs{
-		"id": id,
-	}
-
-	pvz := pvz_domain.PVZ{}
-
-	err := r.pool.QueryRow(ctx, query, args).Scan(&pvz.ID, &pvz.RegistrationDate, &pvz.City)
-	if err != nil {
-		// TODO: handle err
-		return nil, err
-	}
-
-	return &pvz, nil
 }
 
 func (r *PVZPostgresRepository) ListWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]*pvz_domain.PVZWithReceptions, error) {
@@ -89,8 +75,7 @@ func (r *PVZPostgresRepository) ListWithReceptions(ctx context.Context, startDat
 
 	rows, err := r.pool.Query(ctx, query, args)
 	if err != nil {
-		// TODO: handle err
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", pvz_domain.ErrInternalDatabase, err)
 	}
 	defer rows.Close()
 
@@ -118,8 +103,7 @@ func (r *PVZPostgresRepository) ListWithReceptions(ctx context.Context, startDat
 			&productID, &productDT, &productType, &productReception,
 		)
 		if err != nil {
-			// TODO: handle err
-			return nil, err
+			return nil, fmt.Errorf("%w: %w", pvz_domain.ErrInternalDatabase, err)
 		}
 
 		if _, ok := result[pvzID]; !ok {
@@ -157,6 +141,10 @@ func (r *PVZPostgresRepository) ListWithReceptions(ctx context.Context, startDat
 				})
 			}
 		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%w: %w", pvz_domain.ErrInternalDatabase, err)
 	}
 
 	var finalResult []*pvz_domain.PVZWithReceptions
