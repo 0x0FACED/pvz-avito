@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/0x0FACED/pvz-avito/internal/product/domain"
 	"github.com/jackc/pgx/v5"
@@ -102,6 +103,28 @@ func (r *ProductPostgresRepository) GetLastByReception(ctx context.Context, rece
 }
 
 func (r *ProductPostgresRepository) DeleteLastFromReception(ctx context.Context, receptionID string) error {
+	var count int
+
+	checkQuery := `
+		SELECT COUNT(*) 
+		FROM avito.products 
+		WHERE reception_id = @reception_id
+	`
+
+	args := pgx.NamedArgs{
+		"reception_id": receptionID,
+	}
+
+	err := r.pool.QueryRow(ctx, checkQuery, args).Scan(&count)
+	if err != nil {
+		// TODO: handle err
+		return err
+	}
+
+	if count == 0 {
+		return fmt.Errorf("no products found for reception_id: %s", receptionID)
+	}
+
 	query := `
 		DELETE FROM avito.products
 		WHERE id = (
@@ -113,12 +136,13 @@ func (r *ProductPostgresRepository) DeleteLastFromReception(ctx context.Context,
 		)
 	`
 
-	args := pgx.NamedArgs{
-		"reception_id": receptionID,
+	_, err = r.pool.Exec(ctx, query, args)
+	if err != nil {
+		// TODO: handle
+		return err
 	}
 
-	_, err := r.pool.Exec(ctx, query, args)
-	return err
+	return nil
 }
 
 func (r *ProductPostgresRepository) ListByReception(ctx context.Context, receptionID string) ([]*domain.Product, error) {
