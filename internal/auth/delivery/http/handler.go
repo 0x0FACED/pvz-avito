@@ -38,7 +38,7 @@ func (h Handler) RegisterRoutes(mux *http.ServeMux) {
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request body"))
 		return
 	}
 
@@ -68,7 +68,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request body"))
 		return
 	}
 
@@ -87,9 +87,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	token, err := h.jwtManager.Generate(user.Email.String(), user.Role.String())
 	if err != nil {
-		// TODO: change
-		status := http.StatusInternalServerError
-		http.Error(w, err.Error(), status)
+		httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request"))
 		return
 	}
 
