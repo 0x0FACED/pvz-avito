@@ -17,7 +17,6 @@ import (
 
 type PVZService interface {
 	Create(ctx context.Context, params application.CreateParams) (*pvz_domain.PVZ, error)
-	FindByID(ctx context.Context, id string) (*pvz_domain.PVZ, error)
 	DeleteLastProduct(ctx context.Context, params application.DeleteLastProductParams) error
 	ListWithReceptions(ctx context.Context, params application.ListWithReceptionsParams) ([]*pvz_domain.PVZWithReceptions, error)
 	CloseLastReception(ctx context.Context, params application.CloseLastReceptionParams) (*reception_domain.Reception, error)
