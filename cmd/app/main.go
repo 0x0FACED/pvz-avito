@@ -66,7 +66,7 @@ func main() {
 
 	// creating all svcs
 	authSvc := auth_svc.NewAuthService(authRepo, authSvcLogger)
-	pvzSvc := pvz_svc.NewPVZService(pvzRepo, receptionRepo, pvzSvcLogger)
+	pvzSvc := pvz_svc.NewPVZService(pvzRepo, receptionRepo, productRepo, pvzSvcLogger)
 	productSvc := product_svc.NewProductService(productRepo, receptionRepo, productSvcLogger)
 	receptionSvc := reception_svc.NewReceptionService(receptionRepo, receptionSvcLogger)
 
