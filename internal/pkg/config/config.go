@@ -33,7 +33,6 @@ type ServerConfig struct {
 	WriteTimeout time.Duration `env:"SERVER_WRITE_TIMEOUT"`
 	IdleTimeout  time.Duration `env:"SERVER_IDLE_TIMEOUT"`
 
-	// echo
 	DebugMode bool `env:"SERVER_DEBUG_MODE"`
 
 	JWTSecret string `env:"SERVER_JWT_SECRET" envDefault:"test-secret-key"`
@@ -80,4 +79,28 @@ func MustLoad() *AppConfig {
 	}
 
 	return cfg
+}
+
+// cfg for integration tests
+func LoadTest() *AppConfig {
+	return &AppConfig{
+		Database: DatabaseConfig{
+			DSN:               "postgres://test_user:test_pass@localhost:5432/pvz_avito_test_db?sslmode=disable",
+			MaxOpenConns:      10,
+			MaxIdleConns:      5,
+			ConnMaxLifetime:   30 * time.Minute,
+			ConnMaxIdleTime:   5 * time.Minute,
+			ConnectionTimeout: 10 * time.Second,
+			HealthCheckPeriod: 15 * time.Second,
+		},
+		Server: ServerConfig{
+			Host:         "127.0.0.1",
+			Port:         "8080",
+			ReadTimeout:  15 * time.Second,
+			WriteTimeout: 15 * time.Second,
+			IdleTimeout:  30 * time.Second,
+			DebugMode:    true,
+			JWTSecret:    "test-jwt-secret",
+		},
+	}
 }
