@@ -18,8 +18,8 @@ type CloseResponse struct {
 }
 
 type ListResponse struct {
-	PVZ        pvz         `json:"pvz"`
-	Receptions []reception `json:"receptions"`
+	PVZ        pvz                     `json:"pvz"`
+	Receptions []receptionWithProducts `json:"receptions"`
 }
 
 type product struct {
@@ -34,7 +34,10 @@ type reception struct {
 	DateTime time.Time `json:"dateTime"`
 	PVZID    string    `json:"pvzId"`
 	Status   string    `json:"status"`
-	Products []product `json:"products"`
+}
+type receptionWithProducts struct {
+	Reception reception `json:"reception"`
+	Products  []product `json:"products"`
 }
 
 type pvz struct {

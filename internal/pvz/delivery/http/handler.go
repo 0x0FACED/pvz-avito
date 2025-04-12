@@ -223,8 +223,8 @@ func (h *Handler) ListWithReceptions(w http.ResponseWriter, r *http.Request) {
 				RegistrationDate: *val.PVZ.RegistrationDate,
 				City:             string(val.PVZ.City),
 			},
-			Receptions: func() []reception {
-				var receptions []reception
+			Receptions: func() []receptionWithProducts {
+				var receptions []receptionWithProducts
 				for _, rec := range val.Receptions {
 					var products []product
 					for _, prod := range rec.Products {
@@ -235,11 +235,13 @@ func (h *Handler) ListWithReceptions(w http.ResponseWriter, r *http.Request) {
 							ReceptionID: prod.ReceptionID,
 						})
 					}
-					receptions = append(receptions, reception{
-						ID:       rec.Reception.ID,
-						DateTime: rec.Reception.DateTime,
-						PVZID:    rec.Reception.PVZID,
-						Status:   string(rec.Reception.Status),
+					receptions = append(receptions, receptionWithProducts{
+						Reception: reception{
+							ID:       rec.Reception.ID,
+							DateTime: rec.Reception.DateTime,
+							PVZID:    rec.Reception.PVZID,
+							Status:   string(rec.Reception.Status),
+						},
 						Products: products,
 					})
 				}
