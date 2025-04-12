@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/caarlos0/env/v11"
+	env "github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
 )
 
@@ -11,6 +11,7 @@ type AppConfig struct {
 	Database DatabaseConfig
 	Server   ServerConfig
 	Logger   LoggerConfig
+	Metrics  MetricsConfig
 }
 
 type DatabaseConfig struct {
@@ -57,6 +58,11 @@ type LoggerConfig struct {
 	LogsDir string `env:"LOGGER_LOGS_DIR" envDefault:"./logs"`
 }
 
+type MetricsConfig struct {
+	Enabled bool   `env:"METRICS_ENABLED" envDefault:"true"`
+	Port    string `env:"METRICS_PORT" envDefault:"9000"`
+}
+
 // MustLoad loads config from .env file and parse it to CodexConig.
 // Panics if err != nil
 func MustLoad() *AppConfig {
@@ -76,6 +82,10 @@ func MustLoad() *AppConfig {
 
 	if err := env.Parse(&cfg.Logger); err != nil {
 		panic("failed to parse logger config, err: " + err.Error())
+	}
+
+	if err := env.Parse(&cfg.Metrics); err != nil {
+		panic("failed to parse metrics config, err: " + err.Error())
 	}
 
 	return cfg
