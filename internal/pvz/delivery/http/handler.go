@@ -41,7 +41,7 @@ func (h Handler) RegisterRoutes(mux *http.ServeMux) {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	var req createRequest
+	var req CreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpcommon.JSONError(w, http.StatusForbidden, errors.New("invalid request body"))
 		return
