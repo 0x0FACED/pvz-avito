@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/0x0FACED/pvz-avito/internal/pkg/logger"
+	"github.com/0x0FACED/pvz-avito/internal/pkg/metrics"
 	product_domain "github.com/0x0FACED/pvz-avito/internal/product/domain"
 	pvz_domain "github.com/0x0FACED/pvz-avito/internal/pvz/domain"
 	reception_domain "github.com/0x0FACED/pvz-avito/internal/reception/domain"
@@ -60,6 +61,8 @@ func (s *PVZService) Create(ctx context.Context, params CreateParams) (*pvz_doma
 		s.log.Error().Any("params", params).Any("pvz", pvz).Err(err).Msg("Error creating PVZ")
 		return nil, err
 	}
+
+	metrics.PvzCreatedTotal.Inc()
 
 	s.log.Info().Any("params", params).Any("pvz", created).Msg("CreatePVZ successful")
 

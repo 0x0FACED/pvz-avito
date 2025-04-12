@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/0x0FACED/pvz-avito/internal/pkg/logger"
+	"github.com/0x0FACED/pvz-avito/internal/pkg/metrics"
 	reception_domain "github.com/0x0FACED/pvz-avito/internal/reception/domain"
 	"github.com/google/uuid"
 )
@@ -52,6 +53,8 @@ func (s *ReceptionService) Create(ctx context.Context, params CreateParams) (*re
 		s.log.Error().Any("params", params).Any("reception", reception).Err(err).Msg("Error creating reception")
 		return nil, err
 	}
+
+	metrics.ReceptionCreatedTotal.Inc()
 
 	s.log.Info().Any("params", params).Any("reception", created).Msg("CreateReception successful")
 	return created, nil

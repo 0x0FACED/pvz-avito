@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/0x0FACED/pvz-avito/internal/pkg/logger"
+	"github.com/0x0FACED/pvz-avito/internal/pkg/metrics"
 	product_domain "github.com/0x0FACED/pvz-avito/internal/product/domain"
 	reception_domain "github.com/0x0FACED/pvz-avito/internal/reception/domain"
 	"github.com/google/uuid"
@@ -55,6 +56,8 @@ func (s *ProductService) Create(ctx context.Context, params CreateParams) (*prod
 		s.log.Error().Any("params", params).Any("product", product).Err(err).Msg("Error creating product")
 		return nil, err
 	}
+
+	metrics.ProductsAddedTotal.Inc()
 
 	s.log.Info().Any("params", params).Any("product", created).Msg("CreateProduct successful")
 	return created, nil
