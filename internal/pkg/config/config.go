@@ -102,5 +102,16 @@ func LoadTest() *AppConfig {
 			DebugMode:    true,
 			JWTSecret:    "test-jwt-secret",
 		},
+		Logger: LoggerConfig{
+			LogLevel:      "debug",
+			NoColor:       false,
+			TimeFormat:    "2006-01-02T15:04:05Z",
+			TimeLocation:  "UTC",
+			PartsOrder:    "time,level,logger,message",
+			PartsExclude:  "",
+			FieldsOrder:   "",
+			FieldsExclude: "",
+			LogsDir:       "./test_logs",
+		},
 	}
 }
