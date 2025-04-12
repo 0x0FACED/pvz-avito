@@ -26,7 +26,7 @@ func TestAuthHandler_Register(t *testing.T) {
 		request        auth_http.RegisterRequest
 		mockSetup      func(*mocks.MockAuthService)
 		expectedStatus int
-		expectErr    string
+		expectErr      string
 	}{
 		{
 			name: "successful registration",
@@ -63,7 +63,7 @@ func TestAuthHandler_Register(t *testing.T) {
 					Return(nil, auth_domain.ErrInvalidEmail)
 			},
 			expectedStatus: nethttp.StatusBadRequest,
-			expectErr:    "invalid login or password",
+			expectErr:      "invalid login or password",
 		},
 		{
 			name: "user already exists",
@@ -77,7 +77,7 @@ func TestAuthHandler_Register(t *testing.T) {
 					Return(nil, auth_domain.ErrUserAlreadyExists)
 			},
 			expectedStatus: nethttp.StatusBadRequest,
-			expectErr:    auth_domain.ErrUserAlreadyExists.Error(),
+			expectErr:      auth_domain.ErrUserAlreadyExists.Error(),
 		},
 		{
 			name: "invalid role",
@@ -91,7 +91,7 @@ func TestAuthHandler_Register(t *testing.T) {
 					Return(nil, auth_domain.ErrInvalidRole)
 			},
 			expectedStatus: nethttp.StatusBadRequest,
-			expectErr:    "invalid request",
+			expectErr:      "invalid request",
 		},
 	}
 
@@ -137,8 +137,8 @@ func TestAuthHandler_Login(t *testing.T) {
 		request        auth_http.LoginRequest
 		mockSetup      func(*mocks.MockAuthService)
 		expectedStatus int
-		expectToken  bool
-		expectErr    string
+		expectToken    bool
+		expectErr      string
 	}{
 		{
 			name: "successful login",
@@ -161,7 +161,7 @@ func TestAuthHandler_Login(t *testing.T) {
 				}, nil)
 			},
 			expectedStatus: nethttp.StatusOK,
-			expectToken:  true,
+			expectToken:    true,
 		},
 		{
 			name: "invalid creds",
@@ -174,7 +174,7 @@ func TestAuthHandler_Login(t *testing.T) {
 					Return(nil, auth_domain.ErrInvalidPassword)
 			},
 			expectedStatus: nethttp.StatusBadRequest,
-			expectErr:    "invalid login or password",
+			expectErr:      "invalid login or password",
 		},
 	}
 
@@ -216,7 +216,7 @@ func TestAuthHandler_DummyLogin(t *testing.T) {
 		name           string
 		request        auth_http.DummyLoginRequest
 		expectedStatus int
-		expectToken  bool
+		expectToken    bool
 		expectErr      string
 	}{
 		{
@@ -225,7 +225,7 @@ func TestAuthHandler_DummyLogin(t *testing.T) {
 				Role: "moderator",
 			},
 			expectedStatus: nethttp.StatusOK,
-			expectToken:  true,
+			expectToken:    true,
 		},
 		{
 			name: "invalid role",
@@ -261,4 +261,63 @@ func TestAuthHandler_DummyLogin(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAuthHandler_InvalidRequest(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("invalid request body (register)", func(t *testing.T) {
+		authSvcMock := mocks.NewMockAuthService(ctrl)
+		jwtManager := httpcommon.NewManager("test-secret", 3600)
+		handler := auth_http.NewHandler(authSvcMock, jwtManager)
+
+		body, _ := json.Marshal([]byte("{invalid}"))
+
+		req := httptest.NewRequest("POST", "/receptions", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+
+		handler.Register(rec, req)
+
+		assert.Equal(t, nethttp.StatusBadRequest, rec.Code)
+		var errResp httpcommon.ErrorResponse
+		_ = json.NewDecoder(rec.Body).Decode(&errResp)
+		assert.Equal(t, "invalid request body", errResp.Error())
+	})
+
+	t.Run("invalid request body (login)", func(t *testing.T) {
+		authSvcMock := mocks.NewMockAuthService(ctrl)
+		jwtManager := httpcommon.NewManager("test-secret", 3600)
+		handler := auth_http.NewHandler(authSvcMock, jwtManager)
+
+		body, _ := json.Marshal([]byte("{invalid}"))
+
+		req := httptest.NewRequest("POST", "/receptions", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+
+		handler.Login(rec, req)
+
+		assert.Equal(t, nethttp.StatusBadRequest, rec.Code)
+		var errResp httpcommon.ErrorResponse
+		_ = json.NewDecoder(rec.Body).Decode(&errResp)
+		assert.Equal(t, "invalid request body", errResp.Error())
+	})
+
+	t.Run("invalid request body (dummyLogin)", func(t *testing.T) {
+		authSvcMock := mocks.NewMockAuthService(ctrl)
+		jwtManager := httpcommon.NewManager("test-secret", 3600)
+		handler := auth_http.NewHandler(authSvcMock, jwtManager)
+
+		body, _ := json.Marshal([]byte("{invalid}"))
+
+		req := httptest.NewRequest("POST", "/receptions", bytes.NewReader(body))
+		rec := httptest.NewRecorder()
+
+		handler.DummyLogin(rec, req)
+
+		assert.Equal(t, nethttp.StatusBadRequest, rec.Code)
+		var errResp httpcommon.ErrorResponse
+		_ = json.NewDecoder(rec.Body).Decode(&errResp)
+		assert.Equal(t, "invalid request body", errResp.Error())
+	})
 }
