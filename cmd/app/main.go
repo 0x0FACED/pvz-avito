@@ -22,13 +22,17 @@ import (
 	product_svc "github.com/0x0FACED/pvz-avito/internal/product/application"
 	product_http "github.com/0x0FACED/pvz-avito/internal/product/delivery/http"
 	product_db "github.com/0x0FACED/pvz-avito/internal/product/infra/postgres"
+	pb "github.com/0x0FACED/pvz-avito/internal/pvz/delivery/grpc/v1"
+
 	pvz_svc "github.com/0x0FACED/pvz-avito/internal/pvz/application"
+	pvz_grpc "github.com/0x0FACED/pvz-avito/internal/pvz/delivery/grpc"
 	pvz_http "github.com/0x0FACED/pvz-avito/internal/pvz/delivery/http"
 	pvz_db "github.com/0x0FACED/pvz-avito/internal/pvz/infra/postgres"
 	reception_svc "github.com/0x0FACED/pvz-avito/internal/reception/application"
 	reception_http "github.com/0x0FACED/pvz-avito/internal/reception/delivery/http"
 	reception_db "github.com/0x0FACED/pvz-avito/internal/reception/infra/postgres"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -148,7 +152,12 @@ func main() {
 		appLogger.Info().Msg("Metrics server created")
 	}
 
-	app := app.New(srv, metricsSrv, appLogger, cfg)
+	// adding grpc server
+	grpcServer := grpc.NewServer()
+	pvzGrpcHandler := pvz_grpc.NewGRPCHandler(pvzSvc)
+	pb.RegisterPVZServiceServer(grpcServer, pvzGrpcHandler)
+
+	app := app.New(srv, metricsSrv, grpcServer, appLogger, cfg)
 
 	appLogger.Info().Msg("App instance created, starting servers...")
 

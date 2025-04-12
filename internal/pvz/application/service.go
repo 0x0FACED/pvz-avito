@@ -113,6 +113,16 @@ func (s *PVZService) DeleteLastProduct(ctx context.Context, params DeleteLastPro
 	return nil
 }
 
+func (s *PVZService) ListAllPVZs(ctx context.Context) ([]*pvz_domain.PVZ, error) {
+	pvzs, err := s.pvzRepo.ListAllPVZs(ctx)
+	if err != nil {
+		s.log.Error().Err(err).Msg("ListAllPVZs")
+		return pvzs, err
+	}
+
+	return pvzs, nil
+}
+
 func (s *PVZService) ListWithReceptions(ctx context.Context, params ListWithReceptionsParams) ([]*pvz_domain.PVZWithReceptions, error) {
 	pvzWithReceptions, err := s.pvzRepo.ListWithReceptions(ctx, params.StartDate, params.EndDate, *params.Page, *params.Limit)
 	if err != nil {

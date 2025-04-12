@@ -12,6 +12,7 @@ type AppConfig struct {
 	Server   ServerConfig
 	Logger   LoggerConfig
 	Metrics  MetricsConfig
+	GRPCPVZ  GRPCPVZConfig
 }
 
 type DatabaseConfig struct {
@@ -63,6 +64,11 @@ type MetricsConfig struct {
 	Port    string `env:"METRICS_PORT" envDefault:"9000"`
 }
 
+type GRPCPVZConfig struct {
+	Enabled bool   `env:"GRPC_PVZ_ENABLED" envDefault:"true"`
+	Port    string `env:"GRPC_PVZ_PORT" envDefault:"3000"`
+}
+
 // MustLoad loads config from .env file and parse it to CodexConig.
 // Panics if err != nil
 func MustLoad() *AppConfig {
@@ -88,6 +94,10 @@ func MustLoad() *AppConfig {
 		panic("failed to parse metrics config, err: " + err.Error())
 	}
 
+	if err := env.Parse(&cfg.GRPCPVZ); err != nil {
+		panic("failed to parse grpc pvz config, err: " + err.Error())
+	}
+
 	return cfg
 }
 
@@ -95,7 +105,7 @@ func MustLoad() *AppConfig {
 func LoadTest() *AppConfig {
 	return &AppConfig{
 		Database: DatabaseConfig{
-			DSN:               "postgres://test_user:test_pass@localhost:5432/pvz_avito_test_db?sslmode=disable",
+			DSN:               "postgres://postgres:postgres@localhost:5432/pvz_avito_test_db?sslmode=disable",
 			MaxOpenConns:      10,
 			MaxIdleConns:      5,
 			ConnMaxLifetime:   30 * time.Minute,

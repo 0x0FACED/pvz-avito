@@ -57,6 +57,21 @@ func (mr *MockPVZRepositoryMockRecorder) Create(ctx, pvz any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockPVZRepository)(nil).Create), ctx, pvz)
 }
 
+// ListAllPVZs mocks base method.
+func (m *MockPVZRepository) ListAllPVZs(ctx context.Context) ([]*domain.PVZ, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAllPVZs", ctx)
+	ret0, _ := ret[0].([]*domain.PVZ)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAllPVZs indicates an expected call of ListAllPVZs.
+func (mr *MockPVZRepositoryMockRecorder) ListAllPVZs(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllPVZs", reflect.TypeOf((*MockPVZRepository)(nil).ListAllPVZs), ctx)
+}
+
 // ListWithReceptions mocks base method.
 func (m *MockPVZRepository) ListWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]*domain.PVZWithReceptions, error) {
 	m.ctrl.T.Helper()

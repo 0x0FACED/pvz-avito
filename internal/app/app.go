@@ -2,31 +2,36 @@ package app
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"time"
 
 	"github.com/0x0FACED/pvz-avito/internal/pkg/config"
 	"github.com/0x0FACED/pvz-avito/internal/pkg/logger"
+	"google.golang.org/grpc"
 )
 
 type App struct {
 	server        *http.Server
 	metricsServer *http.Server
-	log           *logger.ZerologLogger
-	config        *config.AppConfig
+	grpcServer    *grpc.Server
+
+	log    *logger.ZerologLogger
+	config *config.AppConfig
 }
 
-func New(srv *http.Server, merticsSrv *http.Server, l *logger.ZerologLogger, cfg *config.AppConfig) *App {
+func New(srv *http.Server, merticsSrv *http.Server, grpcSrv *grpc.Server, l *logger.ZerologLogger, cfg *config.AppConfig) *App {
 	return &App{
 		server:        srv,
 		metricsServer: merticsSrv,
+		grpcServer:    grpcSrv,
 		log:           l,
 		config:        cfg,
 	}
 }
 
 func (a *App) Start(ctx context.Context) error {
-	errChan := make(chan error, 2)
+	errChan := make(chan error, 3)
 
 	go func() {
 		a.log.Info().Str("address", a.server.Addr).Msg("Starting application server")
@@ -34,6 +39,22 @@ func (a *App) Start(ctx context.Context) error {
 			errChan <- err
 		}
 	}()
+
+	if a.config.GRPCPVZ.Enabled && a.grpcServer != nil {
+		go func() {
+			addr := ":" + a.config.GRPCPVZ.Port
+			lis, err := net.Listen("tcp", addr)
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			a.log.Info().Str("address", addr).Msg("Starting gRPC server")
+			if err := a.grpcServer.Serve(lis); err != nil {
+				errChan <- err
+			}
+		}()
+	}
 
 	if a.config.Metrics.Enabled && a.metricsServer != nil {
 		go func() {
@@ -65,6 +86,11 @@ func (a *App) Shutdown() error {
 		retErr = err
 	} else {
 		a.log.Info().Msg("Application server stopped")
+	}
+
+	if a.config.GRPCPVZ.Enabled && a.grpcServer != nil {
+		a.grpcServer.GracefulStop()
+		a.log.Info().Msg("gRPC server stopped")
 	}
 
 	if a.config.Metrics.Enabled && a.metricsServer != nil {

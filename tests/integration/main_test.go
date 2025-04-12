@@ -113,7 +113,7 @@ func TestMain(m *testing.M) {
 		IdleTimeout:  cfg.Server.IdleTimeout,
 	}
 
-	app := app.New(srv, nil, logger, cfg)
+	app := app.New(srv, nil, nil, logger, cfg)
 
 	go func() {
 		if err := app.Start(ctx); err != nil {

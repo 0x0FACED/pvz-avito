@@ -52,6 +52,43 @@ func (r *PVZPostgresRepository) Create(ctx context.Context, pvz *pvz_domain.PVZ)
 	return &created, nil
 }
 
+func (r *PVZPostgresRepository) ListAllPVZs(ctx context.Context) ([]*pvz_domain.PVZ, error) {
+	query := `
+		SELECT id, registration_date, city
+		FROM avito.pvz
+	`
+
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []*pvz_domain.PVZ{}, nil
+		}
+		return nil, fmt.Errorf("%w: %w", pvz_domain.ErrInternalDatabase, err)
+	}
+	defer rows.Close()
+
+	var pvzs []*pvz_domain.PVZ
+	for rows.Next() {
+		var p pvz_domain.PVZ
+		err := rows.Scan(
+			&p.ID,
+			&p.RegistrationDate,
+			&p.City,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %w", pvz_domain.ErrInternalDatabase, err)
+		}
+
+		pvzs = append(pvzs, &p)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%w: %w", pvz_domain.ErrInternalDatabase, err)
+	}
+
+	return pvzs, nil
+}
+
 func (r *PVZPostgresRepository) ListWithReceptions(ctx context.Context, startDate, endDate *time.Time, page, limit int) ([]*pvz_domain.PVZWithReceptions, error) {
 	query := `
 		SELECT p.id, p.registration_date, p.city,
