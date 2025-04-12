@@ -201,6 +201,7 @@ func closeReception(t *testing.T, baseURL string, token string, pvzID string) re
 
 func createProductAfterCloseReception(t *testing.T, baseURL string, token string, pvzID string) int {
 	reqBody := product_http.CreateRequest{
+		Type:  string(product_domain.Electronics),
 		PVZID: pvzID,
 	}
 
