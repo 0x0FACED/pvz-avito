@@ -45,11 +45,8 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
-	logger, err := logger.NewZerologLogger(cfg.Logger)
-	if err != nil {
-		log.Fatalln("cant create logger, err: ", err)
-		return
-	}
+	// if need logs from testing - replace with NewZerologLogger(cfg.Logger)
+	logger := logger.NewTestLogger()
 
 	// init all loggers with features
 	httpLogger := logger.WithFeature("http")
@@ -60,7 +57,9 @@ func TestMain(m *testing.M) {
 
 	// connect to db pool
 	pool, err := database.ConnectPool(ctx, cfg.Database)
-
+	if err != nil {
+		return
+	}
 	// clearing db before test
 	clearDB(ctx, pool)
 
@@ -124,7 +123,6 @@ func TestMain(m *testing.M) {
 	time.Sleep(1 * time.Second)
 
 	m.Run()
-	<-ctx.Done()
 
 	if err := app.Shutdown(); err != nil {
 		return
