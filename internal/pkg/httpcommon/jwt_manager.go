@@ -3,8 +3,18 @@ package httpcommon
 import (
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	jwt "github.com/golang-jwt/jwt/v5"
 )
+
+type User string
+
+const (
+	DefaultUserKey User = "user"
+)
+
+func (u User) String() string {
+	return string(u)
+}
 
 type JWTManager struct {
 	secretKey     string
@@ -56,7 +66,7 @@ func (m *JWTManager) GenerateDummy(role string) (string, error) {
 }
 
 func (m *JWTManager) Verify(accessToken string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(accessToken, &Claims{}, func(t *jwt.Token) (any, error) {
+	token, err := jwt.ParseWithClaims(accessToken, &Claims{}, func(_ *jwt.Token) (any, error) {
 		return []byte(m.secretKey), nil
 	})
 	if err != nil {

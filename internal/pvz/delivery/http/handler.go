@@ -47,7 +47,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims, ok := r.Context().Value("user").(*httpcommon.Claims)
+	claims, ok := r.Context().Value(httpcommon.DefaultUserKey).(*httpcommon.Claims)
 	if !ok {
 		httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
 		return
@@ -85,7 +85,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CloseLastReception(w http.ResponseWriter, r *http.Request) {
 	pvzID := r.PathValue("pvzId")
 
-	claims, ok := r.Context().Value("user").(*httpcommon.Claims)
+	claims, ok := r.Context().Value(httpcommon.DefaultUserKey).(*httpcommon.Claims)
 	if !ok {
 		httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
 		return
@@ -122,7 +122,7 @@ func (h *Handler) CloseLastReception(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeleteLastProduct(w http.ResponseWriter, r *http.Request) {
 	pvzID := r.PathValue("pvzId")
 
-	claims, ok := r.Context().Value("user").(*httpcommon.Claims)
+	claims, ok := r.Context().Value(httpcommon.DefaultUserKey).(*httpcommon.Claims)
 	if !ok {
 		httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
 		return

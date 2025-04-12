@@ -38,7 +38,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims, ok := r.Context().Value("user").(*httpcommon.Claims)
+	claims, ok := r.Context().Value(httpcommon.DefaultUserKey).(*httpcommon.Claims)
 	if !ok {
 		http.Error(w, "User not found in context", http.StatusBadRequest)
 		return

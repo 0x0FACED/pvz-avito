@@ -37,7 +37,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims, ok := r.Context().Value("user").(*httpcommon.Claims)
+	claims, ok := r.Context().Value(httpcommon.DefaultUserKey).(*httpcommon.Claims)
 	if !ok {
 		httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
 		return
