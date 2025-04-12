@@ -19,8 +19,8 @@ import (
 type PVZService interface {
 	Create(ctx context.Context, params application.CreateParams) (*pvz_domain.PVZ, error)
 	DeleteLastProduct(ctx context.Context, params application.DeleteLastProductParams) error
-	ListWithReceptions(ctx context.Context, params application.ListWithReceptionsParams) ([]*pvz_domain.PVZWithReceptions, error)
 	CloseLastReception(ctx context.Context, params application.CloseLastReceptionParams) (*reception_domain.Reception, error)
+	ListWithReceptions(ctx context.Context, params application.ListWithReceptionsParams) ([]*pvz_domain.PVZWithReceptions, error)
 }
 
 type Handler struct {
