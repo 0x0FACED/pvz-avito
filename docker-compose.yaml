@@ -10,6 +10,7 @@ services:
       - .env
     ports:
       - "${SERVER_PORT}:${SERVER_PORT}"
+      - "${METRICS_PORT}:${METRICS_PORT}"
     depends_on:
       - db
       - migrator
