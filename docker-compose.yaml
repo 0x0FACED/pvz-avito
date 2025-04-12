@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  server:
+    container_name: pvz-avito-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    depends_on:
+      - db
+      - migrator
+    restart: unless-stopped
+    networks:
+      - pvz-avito-net
+
+  migrator:
+    container_name: pvz-avito-migrator
+    image: migrate/migrate:v4.17.0
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    entrypoint: >
+      migrate -path=/migrations -database ${DATABASE_DSN} up
+    env_file:
+      - .env
+    networks:
+      - pvz-avito-net
+    restart: on-failure
+
+  db:
+    container_name: pvz-avito-db
+    image: postgres:17
+    restart: unless-stopped
+    ports:
+      - "5433:5433"
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DATABASE_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pvz-avito-net
+
+volumes:
+  postgres_data:
+
+networks:
+  pvz-avito-net:
+    driver: bridge
