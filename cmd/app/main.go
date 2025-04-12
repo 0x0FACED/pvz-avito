@@ -28,6 +28,7 @@ import (
 	reception_svc "github.com/0x0FACED/pvz-avito/internal/reception/application"
 	reception_http "github.com/0x0FACED/pvz-avito/internal/reception/delivery/http"
 	reception_db "github.com/0x0FACED/pvz-avito/internal/reception/infra/postgres"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -44,19 +45,28 @@ func main() {
 
 	logger, err := logger.NewZerologLogger(cfg.Logger)
 	if err != nil {
-		log.Fatalln("cant create logger, err: ", err)
+		log.Panicln("cant create logger, err: ", err)
 		return
 	}
 
 	// init all loggers with features
+	appLogger := logger.WithFeature("app")
 	httpLogger := logger.WithFeature("http")
 	authSvcLogger := logger.WithFeature("auth_svc")
 	pvzSvcLogger := logger.WithFeature("pvz_svc")
 	productSvcLogger := logger.WithFeature("product_svc")
 	receptionSvcLogger := logger.WithFeature("reception_svc")
 
+	appLogger.Info().Msg("Loggers with features created")
+
+	appLogger.Info().Msg("Connecting to database...")
 	// connect to db pool
 	pool, err := database.ConnectPool(ctx, cfg.Database)
+	if err != nil {
+		appLogger.Fatal().Err(err).Msg("Failed to connect to database")
+	}
+
+	appLogger.Info().Msg("Successfully connected to database")
 
 	// creating all repos
 	authRepo := auth_db.NewAuthPostgresRepository(pool)
@@ -64,23 +74,33 @@ func main() {
 	productRepo := product_db.NewProductPostgresRepository(pool)
 	receptionRepo := reception_db.NewReceptionPostgresRepository(pool)
 
+	appLogger.Info().Msg("Repos for application services created")
+
 	// creating all svcs
 	authSvc := auth_svc.NewAuthService(authRepo, authSvcLogger)
 	pvzSvc := pvz_svc.NewPVZService(pvzRepo, receptionRepo, productRepo, pvzSvcLogger)
 	productSvc := product_svc.NewProductService(productRepo, receptionRepo, productSvcLogger)
 	receptionSvc := reception_svc.NewReceptionService(receptionRepo, receptionSvcLogger)
 
+	appLogger.Info().Msg("Application services created")
+
 	// jwt manager (move diration to cfg)
 	jwt := httpcommon.NewManager(cfg.Server.JWTSecret, time.Hour*240)
 
+	appLogger.Info().Msg("JWT Manager created")
+
 	// create middleware
 	middleware := middleware.NewMiddlewareHandler(jwt, httpLogger)
+
+	appLogger.Info().Msg("Middleware instance created")
 
 	// create all handlers
 	authHandler := auth_http.NewHandler(authSvc, jwt)
 	pvzHandler := pvz_http.NewHandler(pvzSvc)
 	productHandler := product_http.NewHandler(productSvc)
 	receptionHandler := reception_http.NewHandler(receptionSvc)
+
+	appLogger.Info().Msg("Handlers created")
 
 	// registering routes with middleware
 	mux := http.NewServeMux()
@@ -99,6 +119,11 @@ func main() {
 	// this is final mux
 	loggedMux := middleware.Logger(mux)
 
+	metricsMux := http.NewServeMux()
+	metricsMux.Handle("/metrics", promhttp.Handler())
+
+	appLogger.Info().Msg("All routes added")
+
 	srv := &http.Server{
 		Addr:         cfg.Server.Host + ":" + cfg.Server.Port,
 		Handler:      loggedMux,
@@ -107,7 +132,25 @@ func main() {
 		IdleTimeout:  cfg.Server.IdleTimeout,
 	}
 
-	app := app.New(srv, cfg)
+	appLogger.Info().Msg("Application server created")
+
+	var metricsSrv *http.Server
+
+	if cfg.Metrics.Enabled {
+		metricsSrv = &http.Server{
+			Addr:         cfg.Server.Host + ":" + cfg.Metrics.Port,
+			Handler:      metricsMux,
+			ReadTimeout:  cfg.Server.ReadTimeout,
+			WriteTimeout: cfg.Server.WriteTimeout,
+			IdleTimeout:  cfg.Server.IdleTimeout,
+		}
+
+		appLogger.Info().Msg("Metrics server created")
+	}
+
+	app := app.New(srv, metricsSrv, appLogger, cfg)
+
+	appLogger.Info().Msg("App instance created, starting servers...")
 
 	go func() {
 		if err := app.Start(ctx); err != nil {
@@ -120,5 +163,4 @@ func main() {
 	if err := app.Shutdown(); err != nil {
 		return
 	}
-
 }
