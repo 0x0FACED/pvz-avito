@@ -12,6 +12,7 @@ import (
 
 	"github.com/0x0FACED/pvz-avito/internal/pkg/httpcommon"
 	"github.com/0x0FACED/pvz-avito/internal/pkg/logger"
+	"github.com/0x0FACED/pvz-avito/internal/pkg/metrics"
 )
 
 type Middleware struct {
@@ -53,7 +54,7 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 			m.log.Info().Str("user_email", claims.Email).Str("user_role", claims.Role).Msg("User authenticated successfully")
 		}
 
-		ctx := context.WithValue(r.Context(), "user", claims)
+		ctx := context.WithValue(r.Context(), httpcommon.DefaultUserKey, claims)
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
@@ -129,4 +130,36 @@ func (m *Middleware) Logger(next http.Handler) http.Handler {
 		// Write final log
 		logEvent.Msg("Request")
 	})
+}
+
+func (m *Middleware) Metrics(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rw := &responseWriter{w, http.StatusOK}
+
+		next.ServeHTTP(rw, r)
+
+		duration := time.Since(start).Seconds()
+
+		metrics.HTTPRequestsTotal.WithLabelValues(
+			r.Method,
+			r.URL.Path,
+			http.StatusText(rw.status),
+		).Inc()
+
+		metrics.HTTPResponseTime.WithLabelValues(
+			r.Method,
+			r.URL.Path,
+		).Observe(duration)
+	})
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
 }
