@@ -119,7 +119,7 @@ func (h *Handler) DummyLogin(w http.ResponseWriter, r *http.Request) {
 	role := auth_domain.Role(req.Role)
 
 	if err := role.Validate(); err != nil {
-		httpcommon.JSONError(w, http.StatusBadRequest, err)
+		httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request"))
 		return
 	}
 
