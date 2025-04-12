@@ -9,7 +9,7 @@ import (
 	product_domain "github.com/0x0FACED/pvz-avito/internal/product/domain"
 	pvz_domain "github.com/0x0FACED/pvz-avito/internal/pvz/domain"
 	reception_domain "github.com/0x0FACED/pvz-avito/internal/reception/domain"
-	"github.com/jackc/pgx/v5"
+	pgx "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -111,7 +111,7 @@ func (r *PVZPostgresRepository) ListWithReceptions(ctx context.Context, startDat
 				PVZ: &pvz_domain.PVZ{
 					ID:               &pvzID,
 					RegistrationDate: &pvzRegDate,
-					City:             pvz_domain.City(pvzCity),
+					City:             pvzCity,
 				},
 				Receptions: []*pvz_domain.ReceptionWithProducts{},
 			}
@@ -147,7 +147,7 @@ func (r *PVZPostgresRepository) ListWithReceptions(ctx context.Context, startDat
 		return nil, fmt.Errorf("%w: %w", pvz_domain.ErrInternalDatabase, err)
 	}
 
-	var finalResult []*pvz_domain.PVZWithReceptions
+	finalResult := make([]*pvz_domain.PVZWithReceptions, 0, len(result))
 	for _, v := range result {
 		finalResult = append(finalResult, v)
 	}
