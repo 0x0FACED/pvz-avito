@@ -31,16 +31,15 @@ func (h Handler) RegisterRoutes(mux *http.ServeMux) {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-
 	var req CreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		httpcommon.JSONError(w, http.StatusBadRequest, errors.New("invalid request body"))
 		return
 	}
 
 	claims, ok := r.Context().Value(httpcommon.DefaultUserKey).(*httpcommon.Claims)
 	if !ok {
-		http.Error(w, "User not found in context", http.StatusBadRequest)
+		httpcommon.JSONError(w, http.StatusForbidden, errors.New("access denied"))
 		return
 	}
 
