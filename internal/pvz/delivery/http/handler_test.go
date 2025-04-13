@@ -408,8 +408,8 @@ func TestPVZHandler_ListWithReceptions(t *testing.T) {
 		{
 			name: "successful list with all params",
 			queryParams: map[string]string{
-				"startDate": startDate.Format("2006-01-02"),
-				"endDate":   endDate.Format("2006-01-02"),
+				"startDate": startDate.Format(time.DateOnly),
+				"endDate":   endDate.Format(time.DateOnly),
 				"page":      "1",
 				"limit":     "10",
 			},

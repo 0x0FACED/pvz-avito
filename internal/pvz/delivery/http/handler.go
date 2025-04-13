@@ -167,7 +167,7 @@ func (h *Handler) ListWithReceptions(w http.ResponseWriter, r *http.Request) {
 	resp := make([]*ListResponse, 0)
 
 	if startDateStr != "" {
-		t, err := time.Parse("2006-01-02", startDateStr)
+		t, err := time.Parse(time.DateOnly, startDateStr)
 		if err != nil {
 			httpcommon.JSONResponse(w, http.StatusOK, resp)
 			return
@@ -176,7 +176,7 @@ func (h *Handler) ListWithReceptions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if endDateStr != "" {
-		t, err := time.Parse("2006-01-02", endDateStr)
+		t, err := time.Parse(time.DateOnly, endDateStr)
 		if err != nil {
 			httpcommon.JSONResponse(w, http.StatusOK, resp)
 			return
